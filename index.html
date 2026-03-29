@@ -1,0 +1,2409 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GPU Inference Engineering — CUDA · TensorRT · PyTorch</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #0a0a0f;
+        --surface: #111118;
+        --surface2: #16161f;
+        --border: #1e1e2e;
+        --border2: #2a2a3e;
+        --text: #e2e2f0;
+        --muted: #6e6e8a;
+        --green: #00ff9d;
+        --orange: #ff6b35;
+        --blue: #4a9eff;
+        --purple: #b97fff;
+        --yellow: #ffd166;
+        --red: #ff4d6a;
+        --mono: "IBM Plex Mono", monospace;
+        --serif: "Instrument Serif", serif;
+        --sans: "DM Sans", sans-serif;
+      }
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      html {
+        scroll-behavior: smooth;
+      }
+      body {
+        background: var(--bg);
+        color: var(--text);
+        font-family: var(--sans);
+        font-weight: 300;
+        line-height: 1.75;
+        font-size: 15px;
+        overflow-x: hidden;
+      }
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background-image:
+          linear-gradient(rgba(0, 255, 157, 0.012) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(0, 255, 157, 0.012) 1px, transparent 1px);
+        background-size: 48px 48px;
+        pointer-events: none;
+        z-index: 0;
+      }
+
+      header {
+        position: relative;
+        padding: 80px 0 60px;
+        border-bottom: 1px solid var(--border);
+        overflow: hidden;
+      }
+      header::after {
+        content: "";
+        position: absolute;
+        top: -40%;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 700px;
+        height: 400px;
+        background: radial-gradient(ellipse, rgba(0, 255, 157, 0.055) 0%, transparent 70%);
+        pointer-events: none;
+      }
+      .header-inner {
+        max-width: 960px;
+        margin: 0 auto;
+        padding: 0 32px;
+        position: relative;
+        z-index: 1;
+      }
+      .header-tag {
+        font-family: var(--mono);
+        font-size: 11px;
+        font-weight: 500;
+        color: var(--green);
+        letter-spacing: 0.15em;
+        text-transform: uppercase;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .header-tag::before {
+        content: "";
+        display: inline-block;
+        width: 24px;
+        height: 1px;
+        background: var(--green);
+      }
+      h1 {
+        font-family: var(--serif);
+        font-size: clamp(36px, 6vw, 60px);
+        font-weight: 400;
+        line-height: 1.1;
+        letter-spacing: -0.02em;
+        margin-bottom: 20px;
+      }
+      h1 em {
+        font-style: italic;
+        color: var(--green);
+      }
+      .header-sub {
+        font-size: 15px;
+        color: var(--muted);
+        max-width: 620px;
+        line-height: 1.65;
+        margin-bottom: 32px;
+      }
+      .pills {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      .pill {
+        font-family: var(--mono);
+        font-size: 11px;
+        font-weight: 500;
+        padding: 5px 12px;
+        border-radius: 3px;
+        letter-spacing: 0.05em;
+      }
+      .p-g {
+        background: rgba(0, 255, 157, 0.07);
+        color: var(--green);
+        border: 1px solid rgba(0, 255, 157, 0.2);
+      }
+      .p-o {
+        background: rgba(255, 107, 53, 0.07);
+        color: var(--orange);
+        border: 1px solid rgba(255, 107, 53, 0.2);
+      }
+      .p-b {
+        background: rgba(74, 158, 255, 0.07);
+        color: var(--blue);
+        border: 1px solid rgba(74, 158, 255, 0.2);
+      }
+      .p-p {
+        background: rgba(185, 127, 255, 0.07);
+        color: var(--purple);
+        border: 1px solid rgba(185, 127, 255, 0.2);
+      }
+      .p-y {
+        background: rgba(255, 209, 102, 0.07);
+        color: var(--yellow);
+        border: 1px solid rgba(255, 209, 102, 0.2);
+      }
+
+      nav {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        background: rgba(10, 10, 15, 0.94);
+        backdrop-filter: blur(16px);
+        border-bottom: 1px solid var(--border);
+        padding: 0 32px;
+      }
+      .nav-inner {
+        max-width: 960px;
+        margin: 0 auto;
+        display: flex;
+        overflow-x: auto;
+        scrollbar-width: none;
+      }
+      .nav-inner::-webkit-scrollbar {
+        display: none;
+      }
+      nav a {
+        font-family: var(--mono);
+        font-size: 10px;
+        font-weight: 500;
+        color: var(--muted);
+        text-decoration: none;
+        padding: 13px 12px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        white-space: nowrap;
+        transition: color 0.2s;
+        border-bottom: 2px solid transparent;
+        display: block;
+      }
+      nav a:hover {
+        color: var(--green);
+        border-bottom-color: var(--green);
+      }
+
+      main {
+        max-width: 960px;
+        margin: 0 auto;
+        padding: 0 32px 120px;
+        position: relative;
+        z-index: 1;
+      }
+
+      section {
+        padding: 72px 0;
+        border-bottom: 1px solid var(--border);
+      }
+      section:last-child {
+        border-bottom: none;
+      }
+      .snum {
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--muted);
+        letter-spacing: 0.1em;
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .snum::after {
+        content: "";
+        flex: 1;
+        height: 1px;
+        background: var(--border);
+      }
+      h2 {
+        font-family: var(--serif);
+        font-size: clamp(26px, 4vw, 40px);
+        font-weight: 400;
+        line-height: 1.15;
+        letter-spacing: -0.015em;
+        margin-bottom: 28px;
+      }
+      h3 {
+        font-family: var(--sans);
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text);
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        margin: 40px 0 14px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      h3 .dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+      p {
+        margin-bottom: 16px;
+        color: #c0c0d8;
+      }
+      p:last-child {
+        margin-bottom: 0;
+      }
+      strong {
+        color: var(--text);
+        font-weight: 500;
+      }
+      ul,
+      ol {
+        padding-left: 22px;
+        margin: 16px 0;
+      }
+      li {
+        margin-bottom: 8px;
+        color: #c0c0d8;
+        font-size: 14.5px;
+        line-height: 1.65;
+      }
+      li strong {
+        color: var(--text);
+      }
+
+      .callout {
+        background: var(--surface2);
+        border-left: 3px solid var(--green);
+        border-radius: 0 6px 6px 0;
+        padding: 20px 24px;
+        margin: 28px 0;
+        font-size: 14px;
+      }
+      .callout.o {
+        border-color: var(--orange);
+      }
+      .callout.b {
+        border-color: var(--blue);
+      }
+      .callout.p {
+        border-color: var(--purple);
+      }
+      .callout.y {
+        border-color: var(--yellow);
+      }
+      .callout.r {
+        border-color: var(--red);
+      }
+      .clabel {
+        font-family: var(--mono);
+        font-size: 10px;
+        font-weight: 600;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        margin-bottom: 8px;
+        color: var(--green);
+      }
+      .callout.o .clabel {
+        color: var(--orange);
+      }
+      .callout.b .clabel {
+        color: var(--blue);
+      }
+      .callout.p .clabel {
+        color: var(--purple);
+      }
+      .callout.y .clabel {
+        color: var(--yellow);
+      }
+      .callout.r .clabel {
+        color: var(--red);
+      }
+
+      pre {
+        background: #070710;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 22px;
+        overflow-x: auto;
+        margin: 24px 0;
+        position: relative;
+      }
+      pre::before {
+        content: attr(data-lang);
+        position: absolute;
+        top: 10px;
+        right: 14px;
+        font-family: var(--mono);
+        font-size: 10px;
+        color: var(--muted);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+      code {
+        font-family: var(--mono);
+        font-size: 12.5px;
+        line-height: 1.75;
+        color: #a8b5c8;
+      }
+      p code,
+      li code {
+        background: rgba(0, 255, 157, 0.06);
+        color: var(--green);
+        padding: 2px 7px;
+        border-radius: 3px;
+        font-size: 12px;
+        border: 1px solid rgba(0, 255, 157, 0.12);
+      }
+      .kw {
+        color: var(--purple);
+      }
+      .fn {
+        color: var(--blue);
+      }
+      .str {
+        color: var(--yellow);
+      }
+      .cm {
+        color: #3a3a5c;
+      }
+      .num {
+        color: var(--orange);
+      }
+
+      .tw {
+        overflow-x: auto;
+        margin: 28px 0;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+      }
+      thead tr {
+        background: var(--surface2);
+      }
+      thead th {
+        font-family: var(--mono);
+        font-size: 10.5px;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+        padding: 13px 16px;
+        text-align: left;
+        border-bottom: 1px solid var(--border);
+        white-space: nowrap;
+      }
+      tbody tr {
+        border-bottom: 1px solid var(--border);
+      }
+      tbody tr:last-child {
+        border-bottom: none;
+      }
+      tbody tr:hover {
+        background: rgba(0, 255, 157, 0.02);
+      }
+      td {
+        padding: 13px 16px;
+        color: #bbbbd0;
+        vertical-align: top;
+        line-height: 1.5;
+      }
+      td:first-child {
+        font-family: var(--mono);
+        font-size: 11.5px;
+        color: var(--text);
+        font-weight: 500;
+        white-space: nowrap;
+      }
+      .tg {
+        color: var(--green);
+        font-family: var(--mono);
+        font-size: 11px;
+        font-weight: 600;
+      }
+      .ty {
+        color: var(--yellow);
+        font-family: var(--mono);
+        font-size: 11px;
+        font-weight: 600;
+      }
+      .to {
+        color: var(--orange);
+        font-family: var(--mono);
+        font-size: 11px;
+        font-weight: 600;
+      }
+      .tr {
+        color: var(--red);
+        font-family: var(--mono);
+        font-size: 11px;
+        font-weight: 600;
+      }
+
+      .gpu-trio {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+        margin: 32px 0;
+      }
+      @media (max-width: 700px) {
+        .gpu-trio {
+          grid-template-columns: 1fr;
+        }
+      }
+      .gpu-card {
+        background: var(--surface2);
+        border: 1px solid var(--border2);
+        border-radius: 10px;
+        overflow: hidden;
+      }
+      .gpu-header {
+        padding: 18px 20px 14px;
+        border-bottom: 1px solid var(--border);
+      }
+      .gpu-name {
+        font-family: var(--mono);
+        font-size: 12px;
+        font-weight: 600;
+        margin-bottom: 4px;
+        letter-spacing: 0.04em;
+      }
+      .gpu-arch {
+        font-size: 11px;
+        color: var(--muted);
+        font-family: var(--mono);
+      }
+      .gpu-body {
+        padding: 14px 20px;
+      }
+      .sr {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        padding: 5px 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+        gap: 10px;
+      }
+      .sr:last-child {
+        border-bottom: none;
+      }
+      .srk {
+        font-size: 11px;
+        color: var(--muted);
+        flex-shrink: 0;
+      }
+      .srv {
+        font-family: var(--mono);
+        font-size: 11.5px;
+        color: var(--text);
+        font-weight: 500;
+        text-align: right;
+      }
+      .orin .gpu-header {
+        border-top: 3px solid var(--orange);
+      }
+      .orin .gpu-name {
+        color: var(--orange);
+      }
+      .rtx .gpu-header {
+        border-top: 3px solid var(--green);
+      }
+      .rtx .gpu-name {
+        color: var(--green);
+      }
+      .dgx .gpu-header {
+        border-top: 3px solid var(--purple);
+      }
+      .dgx .gpu-name {
+        color: var(--purple);
+      }
+
+      .bw-bars {
+        margin: 28px 0;
+      }
+      .bw-row {
+        display: flex;
+        align-items: center;
+        margin-bottom: 11px;
+        gap: 14px;
+      }
+      .bw-label {
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--muted);
+        width: 220px;
+        flex-shrink: 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .bw-track {
+        flex: 1;
+        height: 9px;
+        background: var(--border);
+        border-radius: 5px;
+        overflow: hidden;
+      }
+      .bw-fill {
+        height: 100%;
+        border-radius: 5px;
+      }
+      .bw-val {
+        font-family: var(--mono);
+        font-size: 11px;
+        width: 100px;
+        text-align: right;
+        flex-shrink: 0;
+      }
+
+      .eq-block {
+        background: #070710;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 26px 30px;
+        margin: 28px 0;
+      }
+      .eq-title {
+        font-family: var(--mono);
+        font-size: 10px;
+        color: var(--muted);
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        margin-bottom: 14px;
+      }
+      .eq-main {
+        font-family: var(--mono);
+        font-size: 14px;
+        color: var(--text);
+        letter-spacing: 0.02em;
+        line-height: 1.8;
+      }
+      .eq-g {
+        color: var(--green);
+      }
+      .eq-o {
+        color: var(--orange);
+      }
+      .eq-b {
+        color: var(--blue);
+      }
+      .eq-p {
+        color: var(--purple);
+      }
+      .eq-breakdown {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+        gap: 12px;
+        margin-top: 20px;
+        border-top: 1px solid var(--border);
+        padding-top: 20px;
+      }
+      .eq-term {
+        background: var(--surface2);
+        border-radius: 6px;
+        padding: 12px 14px;
+      }
+      .eq-sym {
+        font-family: var(--mono);
+        font-size: 13px;
+        font-weight: 600;
+        margin-bottom: 4px;
+      }
+      .eq-desc {
+        font-size: 11.5px;
+        color: var(--muted);
+        line-height: 1.5;
+      }
+
+      .flow {
+        display: flex;
+        align-items: center;
+        margin: 28px 0;
+        flex-wrap: wrap;
+      }
+      .fs {
+        background: var(--surface2);
+        border: 1px solid var(--border2);
+        border-radius: 6px;
+        padding: 13px 17px;
+        flex: 1;
+        min-width: 90px;
+        text-align: center;
+      }
+      .fsl {
+        font-family: var(--mono);
+        font-size: 10px;
+        color: var(--muted);
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        margin-bottom: 4px;
+      }
+      .fsn {
+        font-family: var(--mono);
+        font-size: 12.5px;
+        font-weight: 500;
+      }
+      .fse {
+        font-size: 10.5px;
+        color: var(--muted);
+        margin-top: 2px;
+      }
+      .fg .fsn {
+        color: var(--green);
+      }
+      .fg {
+        border-color: rgba(0, 255, 157, 0.3);
+      }
+      .fo .fsn {
+        color: var(--orange);
+      }
+      .fo {
+        border-color: rgba(255, 107, 53, 0.3);
+      }
+      .fb .fsn {
+        color: var(--blue);
+      }
+      .fb {
+        border-color: rgba(74, 158, 255, 0.3);
+      }
+      .fp .fsn {
+        color: var(--purple);
+      }
+      .fp {
+        border-color: rgba(185, 127, 255, 0.3);
+      }
+      .fa {
+        font-size: 18px;
+        color: var(--border2);
+        padding: 0 7px;
+        flex-shrink: 0;
+      }
+
+      .mc {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        margin: 28px 0;
+      }
+      @media (max-width: 600px) {
+        .mc {
+          grid-template-columns: 1fr;
+        }
+      }
+      .mcard {
+        background: var(--surface2);
+        border: 1px solid var(--border2);
+        border-radius: 8px;
+        padding: 20px;
+        position: relative;
+        overflow: hidden;
+      }
+      .mcard::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+      }
+      .mcard.pt::before {
+        background: var(--orange);
+      }
+      .mcard.trt::before {
+        background: var(--green);
+      }
+      .mcard-title {
+        font-family: var(--mono);
+        font-size: 11.5px;
+        font-weight: 600;
+        margin-bottom: 14px;
+      }
+      .mcard.pt .mcard-title {
+        color: var(--orange);
+      }
+      .mcard.trt .mcard-title {
+        color: var(--green);
+      }
+      .tl {
+        position: relative;
+        padding-left: 24px;
+        margin: 14px 0;
+      }
+      .tl::before {
+        content: "";
+        position: absolute;
+        left: 4px;
+        top: 8px;
+        bottom: 8px;
+        width: 1px;
+        background: var(--border2);
+      }
+      .tli {
+        position: relative;
+        margin-bottom: 16px;
+      }
+      .tli::before {
+        content: "";
+        position: absolute;
+        left: -21px;
+        top: 6px;
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--green);
+        box-shadow: 0 0 7px rgba(0, 255, 157, 0.4);
+      }
+      .tli:last-child {
+        margin-bottom: 0;
+      }
+      .tll {
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--green);
+        font-weight: 600;
+        margin-bottom: 2px;
+      }
+      .tlt {
+        font-size: 13px;
+        color: #bbbbd0;
+        line-height: 1.5;
+      }
+
+      .hb {
+        background: linear-gradient(135deg, rgba(0, 255, 157, 0.04), rgba(74, 158, 255, 0.04));
+        border: 1px solid rgba(0, 255, 157, 0.1);
+        border-radius: 8px;
+        padding: 22px 28px;
+        margin: 28px 0;
+      }
+      .hb p {
+        color: #d0d0e8;
+      }
+
+      .metric-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 0;
+        border-bottom: 1px solid var(--border);
+        gap: 16px;
+      }
+      .metric-row:last-child {
+        border-bottom: none;
+      }
+      .mname {
+        font-size: 13.5px;
+        color: var(--text);
+        flex: 1;
+      }
+      .mvals {
+        display: flex;
+        gap: 20px;
+      }
+      .mval {
+        text-align: center;
+        min-width: 70px;
+      }
+      .mval .v {
+        font-family: var(--mono);
+        font-size: 12.5px;
+        font-weight: 600;
+        display: block;
+        margin-bottom: 2px;
+      }
+      .mval .vl {
+        font-size: 9px;
+        color: var(--muted);
+        font-family: var(--mono);
+        letter-spacing: 0.05em;
+      }
+
+      .formula {
+        background: #070710;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 20px 24px;
+        margin: 22px 0;
+        font-family: var(--mono);
+        font-size: 13px;
+        color: var(--text);
+        line-height: 1.9;
+      }
+      .formula .r {
+        color: var(--green);
+        font-weight: 600;
+        font-size: 15px;
+        margin-top: 8px;
+        display: block;
+      }
+
+      .dgrid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+        gap: 14px;
+        margin: 28px 0;
+      }
+      .dcard {
+        background: var(--surface2);
+        border: 1px solid var(--border2);
+        border-radius: 8px;
+        padding: 20px;
+      }
+      .dcard-icon {
+        font-size: 22px;
+        margin-bottom: 10px;
+      }
+      .dcard-title {
+        font-family: var(--sans);
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text);
+        margin-bottom: 8px;
+      }
+      .dcard-body {
+        font-size: 13.5px;
+        color: #aaaac0;
+        line-height: 1.6;
+      }
+
+      footer {
+        border-top: 1px solid var(--border);
+        padding: 40px 32px;
+        text-align: center;
+        position: relative;
+        z-index: 1;
+      }
+      footer p {
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--muted);
+        margin: 0;
+        letter-spacing: 0.05em;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="header-inner">
+        <div class="header-tag">GPU Inference Engineering — Field Notes</div>
+        <h1>CUDA · TensorRT<br /><em>vs.</em> PyTorch</h1>
+        <p class="header-sub">
+          A complete deep-dive into the hardware and software stack powering high-throughput video analytics — TFLOPS,
+          memory bandwidth, the inference latency equation, and why your choice of GPU and framework is the difference
+          between 15 FPS and 60+ FPS across dozens of live camera streams.
+        </p>
+        <div class="pills">
+          <span class="pill p-o">Jetson Orin Nano</span>
+          <span class="pill p-g">RTX PRO 2000 Blackwell</span>
+          <span class="pill p-p">DGX Spark GB10</span>
+          <span class="pill p-b">YOLOv8 / v11 · ANPR</span>
+          <span class="pill p-y">TensorRT · PaddleOCR</span>
+        </div>
+      </div>
+    </header>
+
+    <nav>
+      <div class="nav-inner">
+        <a href="#stack">Stack</a>
+        <a href="#gpu-compare">GPU Compare</a>
+        <a href="#tflops">TFLOPS</a>
+        <a href="#bandwidth">Bandwidth</a>
+        <a href="#inference-eq">Inference Eq.</a>
+        <a href="#formats">Formats</a>
+        <a href="#math">Conv/BN/ReLU</a>
+        <a href="#precision">Precision</a>
+        <a href="#async">Execution</a>
+        <a href="#batching">Batching</a>
+        <a href="#scaling">Scaling</a>
+        <a href="#mps">MPS</a>
+        <a href="#decision">Decision Guide</a>
+        <a href="#commands">Commands</a>
+      </div>
+    </nav>
+
+    <main>
+      <!-- 01 -->
+      <section id="stack">
+        <div class="snum">01 — Foundation</div>
+        <h2>CUDA · cuDNN · TensorRT<br />The Software Stack</h2>
+        <p>
+          These are not competing technologies — they form a strict hierarchy, each built on the layer below.
+          Understanding this is prerequisite to everything else.
+        </p>
+
+        <div class="flow">
+          <div class="fs fo">
+            <div class="fsl">Your Code</div>
+            <div class="fsn">Python / C++</div>
+            <div class="fse">User Level</div>
+          </div>
+          <div class="fa">→</div>
+          <div class="fs fb">
+            <div class="fsl">Framework</div>
+            <div class="fsn">PyTorch / TRT</div>
+            <div class="fse">Operator Level</div>
+          </div>
+          <div class="fa">→</div>
+          <div class="fs fp">
+            <div class="fsl">Math Library</div>
+            <div class="fsn">cuDNN</div>
+            <div class="fse">Kernel Level</div>
+          </div>
+          <div class="fa">→</div>
+          <div class="fs fg">
+            <div class="fsl">Platform</div>
+            <div class="fsn">CUDA</div>
+            <div class="fse">HW Abstraction</div>
+          </div>
+          <div class="fa">→</div>
+          <div class="fs">
+            <div class="fsl">Silicon</div>
+            <div class="fsn">GPU Cores</div>
+            <div class="fse">Physical</div>
+          </div>
+        </div>
+
+        <h3><span class="dot" style="background: var(--blue)"></span>CUDA — The Hardware Language</h3>
+        <p>
+          CUDA (Compute Unified Device Architecture) is NVIDIA's foundational parallel computing platform. It exposes
+          the GPU's thousands of cores to any software via a C++ extension. Every neural network operation — matrix
+          multiplications, convolutions, activations — ultimately executes as a CUDA <strong>kernel</strong>: a small
+          function that runs in parallel across hundreds or thousands of threads. CUDA is the reason NVIDIA-optimized
+          models cannot run on AMD or Intel GPUs without a translation layer (ROCm/DirectML).
+        </p>
+
+        <h3><span class="dot" style="background: var(--purple)"></span>cuDNN — The Optimized Math Library</h3>
+        <p>
+          <strong>cuDNN</strong> is NVIDIA's pre-written library of highly optimized deep learning routines —
+          convolutions, normalization, activation functions, pooling — all tuned at the assembly level for each GPU
+          architecture. Both PyTorch and TensorRT call cuDNN under the hood. PyTorch calls cuDNN routines one at a time
+          at runtime; TensorRT benchmarks all available cuDNN algorithms during the offline build phase and permanently
+          bakes the winner into the engine file for your specific hardware.
+        </p>
+
+        <h3><span class="dot" style="background: var(--green)"></span>TensorRT — The Optimizing Compiler</h3>
+        <p>
+          TensorRT takes a trained model, analyzes its entire computation graph, fuses layers together, selects optimal
+          kernels per GPU, calibrates numerical precision, and compiles a binary <strong>engine</strong> tailored to
+          your exact hardware. PyTorch is an interpreter — it re-discovers how to execute the model on every forward
+          pass. TensorRT is a compiler — it figures out the optimal plan once and runs it forever with near-zero
+          overhead.
+        </p>
+
+        <div class="callout b">
+          <div class="clabel">The Blackwell cuDNN Runtime Bug</div>
+          If you've had to disable cuDNN in PyTorch on the RTX PRO 2000 — this is exactly why. PyTorch calls cuDNN's
+          kernel auto-tuner at runtime for every new input shape. On new GPU architectures with early driver support,
+          that live benchmarking can hit unresolved edge cases. TensorRT runs the same benchmarking safely offline. By
+          inference time, the risk is gone.
+        </div>
+      </section>
+
+      <!-- 02 -->
+      <section id="gpu-compare">
+        <div class="snum">02 — Hardware Comparison</div>
+        <h2>Jetson Orin Nano · RTX PRO 2000<br /><em>vs.</em> DGX Spark GB10</h2>
+        <p>
+          Three devices, three philosophies: extreme edge efficiency, compact workstation throughput, and AI-first
+          desktop supercomputing. Every inference time difference you observe traces back to the hardware properties
+          below.
+        </p>
+
+        <div class="gpu-trio">
+          <div class="gpu-card orin">
+            <div class="gpu-header">
+              <div class="gpu-name">Jetson Orin Nano 8GB</div>
+              <div class="gpu-arch">Ampere · Edge SoC · JetPack 6</div>
+            </div>
+            <div class="gpu-body">
+              <div class="sr"><span class="srk">Architecture</span><span class="srv">Ampere SM 8.7</span></div>
+              <div class="sr"><span class="srk">CUDA Cores</span><span class="srv">1,024</span></div>
+              <div class="sr"><span class="srk">Tensor Cores</span><span class="srv">32 × Gen 3</span></div>
+              <div class="sr"><span class="srk">Memory</span><span class="srv">8 GB LPDDR5 (shared)</span></div>
+              <div class="sr">
+                <span class="srk">Bandwidth</span><span class="srv" style="color: var(--orange)">68 GB/s</span>
+              </div>
+              <div class="sr"><span class="srk">FP32 TFLOPS</span><span class="srv">1.28</span></div>
+              <div class="sr"><span class="srk">INT8 TOPS</span><span class="srv">40 Dense / 67 Super</span></div>
+              <div class="sr"><span class="srk">Tensor Core Gen</span><span class="srv">3rd (Ampere)</span></div>
+              <div class="sr"><span class="srk">DLA</span><span class="srv">None (Orin Nano)</span></div>
+              <div class="sr"><span class="srk">Power max</span><span class="srv">25 W (MAXN Super)</span></div>
+              <div class="sr"><span class="srk">Host interface</span><span class="srv">Unified (no PCIe)</span></div>
+              <div class="sr"><span class="srk">ECC</span><span class="srv">Soft ECC only</span></div>
+              <div class="sr">
+                <span class="srk">FP4 support</span><span class="srv" style="color: var(--orange)">No</span>
+              </div>
+              <div class="sr"><span class="srk">Est. cost</span><span class="srv">~$249 (dev kit)</span></div>
+            </div>
+          </div>
+          <div class="gpu-card rtx">
+            <div class="gpu-header">
+              <div class="gpu-name">RTX PRO 2000 Blackwell</div>
+              <div class="gpu-arch">Blackwell · Workstation · PCIe 5.0</div>
+            </div>
+            <div class="gpu-body">
+              <div class="sr"><span class="srk">Architecture</span><span class="srv">Blackwell SM 12.0</span></div>
+              <div class="sr"><span class="srk">CUDA Cores</span><span class="srv">4,352</span></div>
+              <div class="sr"><span class="srk">Tensor Cores</span><span class="srv">136 × Gen 5</span></div>
+              <div class="sr"><span class="srk">Memory</span><span class="srv">16 GB GDDR7 (ECC)</span></div>
+              <div class="sr">
+                <span class="srk">Bandwidth</span><span class="srv" style="color: var(--green)">288 GB/s</span>
+              </div>
+              <div class="sr"><span class="srk">FP32 TFLOPS</span><span class="srv">~17</span></div>
+              <div class="sr"><span class="srk">AI TOPS (FP4)</span><span class="srv">~545 TOPS</span></div>
+              <div class="sr">
+                <span class="srk">Tensor Core Gen</span
+                ><span class="srv" style="color: var(--green)">5th (Blackwell)</span>
+              </div>
+              <div class="sr"><span class="srk">DLA</span><span class="srv">None</span></div>
+              <div class="sr"><span class="srk">Power TDP</span><span class="srv">70 W</span></div>
+              <div class="sr"><span class="srk">Host interface</span><span class="srv">PCIe 5.0 x8</span></div>
+              <div class="sr">
+                <span class="srk">ECC</span><span class="srv" style="color: var(--green)">Full GDDR7 ECC</span>
+              </div>
+              <div class="sr">
+                <span class="srk">FP4 support</span
+                ><span class="srv" style="color: var(--green)">Yes (5th Gen TC)</span>
+              </div>
+              <div class="sr"><span class="srk">Est. cost</span><span class="srv">~$750–850</span></div>
+            </div>
+          </div>
+          <div class="gpu-card dgx">
+            <div class="gpu-header">
+              <div class="gpu-name">DGX Spark (GB10)</div>
+              <div class="gpu-arch">Grace Blackwell SoC · 140W · LPDDR5X</div>
+            </div>
+            <div class="gpu-body">
+              <div class="sr"><span class="srk">Architecture</span><span class="srv">Blackwell (GB10)</span></div>
+              <div class="sr"><span class="srk">CUDA Cores</span><span class="srv">6,144</span></div>
+              <div class="sr"><span class="srk">Tensor Cores</span><span class="srv">Gen 5 (Blackwell)</span></div>
+              <div class="sr"><span class="srk">Memory</span><span class="srv">128 GB LPDDR5X (shared)</span></div>
+              <div class="sr">
+                <span class="srk">Bandwidth</span><span class="srv" style="color: var(--yellow)">273 GB/s</span>
+              </div>
+              <div class="sr"><span class="srk">FP32 TFLOPS</span><span class="srv">31</span></div>
+              <div class="sr"><span class="srk">FP4 PFLOPS</span><span class="srv">1 PFLOP sparse</span></div>
+              <div class="sr">
+                <span class="srk">Tensor Core Gen</span
+                ><span class="srv" style="color: var(--purple)">5th (Blackwell)</span>
+              </div>
+              <div class="sr"><span class="srk">CPU</span><span class="srv">20× Arm v9.2</span></div>
+              <div class="sr"><span class="srk">Power TDP</span><span class="srv">140 W</span></div>
+              <div class="sr"><span class="srk">Host interface</span><span class="srv">Unified C2C 600 GB/s</span></div>
+              <div class="sr"><span class="srk">ECC</span><span class="srv">Unified (system-level)</span></div>
+              <div class="sr">
+                <span class="srk">FP4 support</span
+                ><span class="srv" style="color: var(--purple)">Yes (5th Gen TC)</span>
+              </div>
+              <div class="sr"><span class="srk">Est. cost</span><span class="srv">~$3,999</span></div>
+            </div>
+          </div>
+        </div>
+
+        <h3><span class="dot" style="background: var(--orange)"></span>Memory Architecture — The Defining Split</h3>
+        <ul>
+          <li>
+            <strong>Jetson Orin Nano:</strong> 8 GB LPDDR5 physically shared between CPU and GPU. Zero-copy access — no
+            data transfer needed. Fatal if OS + framework + model weights exceed the pool (swap kills latency
+            instantly).
+          </li>
+          <li>
+            <strong>RTX PRO 2000:</strong> 16 GB dedicated GDDR7. CPU frames cross PCIe 5.0 x8 (~32 GB/s practical) once
+            to enter VRAM; all inference runs at 288 GB/s inside. Separate pools mean no contention with system RAM.
+          </li>
+          <li>
+            <strong>DGX Spark GB10:</strong> 128 GB LPDDR5X unified. CPU and GPU connected via C2C fabric at 600 GB/s
+            internally. The 273 GB/s external bandwidth is the bottleneck — slower than RTX PRO 2000's GDDR7 per byte,
+            despite larger capacity.
+          </li>
+        </ul>
+
+        <div class="callout p">
+          <div class="clabel">The DGX Spark Paradox</div>
+          The GB10 has more CUDA cores and higher FP32 TFLOPS than the RTX PRO 2000, but slightly <em>lower</em> memory
+          bandwidth (273 vs 288 GB/s). For bandwidth-bound YOLO inference on small batches, the RTX PRO 2000 can match
+          or beat the DGX per frame. The DGX wins at running enormous models (70B parameter LLMs, 5+ concurrent
+          pipelines) that simply cannot fit in 8 or 16 GB of VRAM.
+        </div>
+
+        <div class="tw">
+          <table>
+            <thead>
+              <tr>
+                <th>Spec</th>
+                <th>Jetson Orin Nano</th>
+                <th>RTX PRO 2000</th>
+                <th>DGX GB10</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>FP32 TFLOPS</td>
+                <td>1.28</td>
+                <td>~17</td>
+                <td>31</td>
+              </tr>
+              <tr>
+                <td>FP16 Tensor TOPS</td>
+                <td class="to">~10 dense</td>
+                <td class="ty">~136</td>
+                <td class="tg">~250</td>
+              </tr>
+              <tr>
+                <td>INT8 TOPS</td>
+                <td class="to">~20 dense</td>
+                <td class="ty">~272</td>
+                <td class="tg">~500 dense</td>
+              </tr>
+              <tr>
+                <td>Memory bandwidth</td>
+                <td class="to">68 GB/s</td>
+                <td class="tg">288 GB/s</td>
+                <td class="ty">273 GB/s</td>
+              </tr>
+              <tr>
+                <td>VRAM for models</td>
+                <td class="to">~5 GB usable</td>
+                <td class="ty">16 GB ECC</td>
+                <td class="tg">~120 GB</td>
+              </tr>
+              <tr>
+                <td>Tensor Core gen</td>
+                <td class="to">3rd</td>
+                <td class="tg">5th</td>
+                <td class="tg">5th</td>
+              </tr>
+              <tr>
+                <td>PCIe overhead</td>
+                <td class="tg">None (SoC)</td>
+                <td class="ty">PCIe 5.0 x8</td>
+                <td class="tg">None (C2C)</td>
+              </tr>
+              <tr>
+                <td>YOLOv8s FP16 TRT est.</td>
+                <td class="to">~18–28 ms</td>
+                <td class="tg">~2–5 ms</td>
+                <td class="ty">~5–9 ms</td>
+              </tr>
+              <tr>
+                <td>ECC memory</td>
+                <td class="to">Soft only</td>
+                <td class="tg">Full GDDR7 ECC</td>
+                <td class="ty">System-level</td>
+              </tr>
+              <tr>
+                <td>Power efficiency</td>
+                <td class="tg">Excellent</td>
+                <td class="tg">Very good (70W)</td>
+                <td class="ty">Moderate (140W)</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="callout o">
+          <div class="clabel">TOPS Marketing vs Reality</div>
+          NVIDIA advertises the Orin Nano at "67 TOPS" and the DGX at "1000 TOPS FP4." These are
+          <em>peak sparse</em> figures — achievable only when 50% of model weights are exactly zero (structured
+          sparsity). Dense real-world YOLO models achieve roughly 40–60% of sparse TOPS. Always compare dense TOPS at
+          the same precision (FP16 vs FP16) for honest cross-device comparison.
+        </div>
+      </section>
+
+      <!-- 03 -->
+      <section id="tflops">
+        <div class="snum">03 — Compute Throughput</div>
+        <h2>TFLOPS: What It Means<br />for Your Inference Pipeline</h2>
+
+        <p>
+          <strong>TFLOPS (Tera Floating-Point Operations Per Second)</strong> is the most cited GPU spec and the most
+          commonly misapplied one. It measures the <em>peak theoretical ceiling</em> of mathematical throughput — not
+          the throughput you will see in practice.
+        </p>
+
+        <h3><span class="dot" style="background: var(--blue)"></span>Why Peak TFLOPS Is Never Achieved</h3>
+        <p>
+          A GPU achieves peak TFLOPS only when every compute unit is simultaneously busy, fed with exactly the right
+          data format, and executing an optimal kernel with no overhead. In real inference, the gap between theoretical
+          and actual is 40–75% due to:
+        </p>
+        <ul>
+          <li>
+            <strong>Memory starvation:</strong> Compute units finish math faster than VRAM can supply the next operands.
+            Cores sit idle waiting for data — the most common bottleneck.
+          </li>
+          <li>
+            <strong>Kernel launch latency:</strong> PyTorch re-dispatches kernels at Python level for every operator.
+            TensorRT pre-compiles the full dispatch sequence, eliminating this.
+          </li>
+          <li>
+            <strong>Precision mismatch:</strong> Running FP32 data through hardware designed for FP16/INT8 leaves the
+            Tensor Cores completely idle. This is the most common missed opportunity.
+          </li>
+          <li>
+            <strong>Tensor shape alignment:</strong> Non-power-of-2 dimensions cause incomplete warp fills, wasting
+            parallel compute capacity.
+          </li>
+        </ul>
+
+        <h3><span class="dot" style="background: var(--green)"></span>TFLOPS Across Precisions — The Multiplier</h3>
+        <div class="tw">
+          <table>
+            <thead>
+              <tr>
+                <th>Precision</th>
+                <th>Hardware</th>
+                <th>Jetson Orin Nano</th>
+                <th>RTX PRO 2000</th>
+                <th>DGX GB10</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>FP32</td>
+                <td>CUDA cores</td>
+                <td>1.28 TFLOPS</td>
+                <td>~17 TFLOPS</td>
+                <td>31 TFLOPS</td>
+              </tr>
+              <tr>
+                <td>TF32</td>
+                <td>Tensor Cores</td>
+                <td>~2.5 TFLOPS</td>
+                <td>~34 TFLOPS</td>
+                <td>~62 TFLOPS</td>
+              </tr>
+              <tr>
+                <td>FP16</td>
+                <td>Tensor Cores</td>
+                <td class="ty">~5 TFLOPS</td>
+                <td class="tg">~136 TFLOPS</td>
+                <td class="tg">~250 TFLOPS</td>
+              </tr>
+              <tr>
+                <td>INT8</td>
+                <td>Tensor Cores</td>
+                <td class="ty">~10 TOPS</td>
+                <td class="tg">~272 TOPS</td>
+                <td class="tg">~500 TOPS</td>
+              </tr>
+              <tr>
+                <td>FP4</td>
+                <td>5th Gen TCs</td>
+                <td class="to">Not supported</td>
+                <td class="tg">~545 TOPS</td>
+                <td class="tg">~1000 TOPS sparse</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="hb">
+          <p>
+            <strong>Key insight:</strong> The RTX PRO 2000 has 17 TFLOPS FP32 but ~136 TFLOPS FP16. Just switching your
+            YOLO model from PyTorch FP32 to TensorRT FP16 unlocks an 8× theoretical throughput multiplier. In practice
+            you see 3–5× because memory bandwidth becomes the new bottleneck. But the point holds: the hardware capacity
+            was always there — it was just never being used.
+          </p>
+        </div>
+
+        <h3><span class="dot" style="background: var(--orange)"></span>TFLOPS → FPS: The Compute Ceiling</h3>
+        <p>
+          YOLOv8s at 640×640 requires approximately <strong>28.6 GFLOPs per image</strong>. Knowing this, you can
+          calculate the theoretical maximum FPS from TFLOPS alone (before memory bandwidth is factored in):
+        </p>
+
+        <div class="formula">
+          Max FPS (compute bound) = TFLOPS × 10³ ÷ GFLOPs_per_image
+          <br /><br />
+          Jetson Orin Nano FP16 (~5 TFLOPS): 5,000 ÷ 28.6 = ~175 FPS ceiling RTX PRO 2000 FP16 (~136 TFLOPS): 136,000 ÷
+          28.6 = ~4,755 FPS ceiling DGX GB10 FP16 (~250 TFLOPS): 250,000 ÷ 28.6 = ~8,741 FPS ceiling
+          <span class="r">Real-world: 10–30% of ceiling due to memory bandwidth bottleneck</span>
+        </div>
+
+        <h3><span class="dot" style="background: var(--purple)"></span>Tensor Core Generations</h3>
+        <div class="tw">
+          <table>
+            <thead>
+              <tr>
+                <th>Generation</th>
+                <th>Architecture</th>
+                <th>Precision Support</th>
+                <th>vs Gen 3</th>
+                <th>Your Device</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>3rd Gen</td>
+                <td>Ampere</td>
+                <td>FP16, BF16, TF32, INT8, INT4</td>
+                <td>1×</td>
+                <td>Jetson Orin Nano</td>
+              </tr>
+              <tr>
+                <td>4th Gen</td>
+                <td>Hopper / Ada</td>
+                <td>+ FP8</td>
+                <td>~2×</td>
+                <td>RTX 4090, H100</td>
+              </tr>
+              <tr>
+                <td>5th Gen</td>
+                <td>Blackwell</td>
+                <td>+ FP4, FP6, structured sparsity</td>
+                <td class="tg">~3×</td>
+                <td>RTX PRO 2000, DGX GB10</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p>
+          Your RTX PRO 2000 and DGX GB10 both have 5th Gen Tensor Cores. For YOLO inference, this mainly matters for
+          FP16 throughput (3× better than Orin Nano per core) and FP4 availability. For ANPR models and future
+          multimodal scene understanding, the Blackwell Tensor Core gains compound significantly.
+        </p>
+      </section>
+
+      <!-- 04 -->
+      <section id="bandwidth">
+        <div class="snum">04 — Memory Bandwidth</div>
+        <h2>Data Bandwidth: Often the<br />Actual Bottleneck in Inference</h2>
+
+        <p>
+          If TFLOPS is how fast the math units compute, bandwidth is how fast they can be <em>fed</em>. In most
+          inference workloads — especially with TensorRT at FP16/INT8 — math units finish operations faster than VRAM
+          can deliver the next wave of weights and activations. Memory bandwidth, not TFLOPS, is typically the primary
+          limiter of real-world throughput.
+        </p>
+
+        <h3><span class="dot" style="background: var(--blue)"></span>The Bandwidth Formula</h3>
+        <div class="formula">
+          Bandwidth (GB/s) = (Memory Speed MT/s × Bus Width bits) ÷ 8000
+          <br /><br />
+          Jetson Orin Nano LPDDR5: 3200 MT/s × 128-bit ÷ 8000 = 51.2 GB/s (spec: ~68 GB/s) RTX PRO 2000 GDDR7: 18000
+          MT/s × 128-bit ÷ 8000 = 288 GB/s DGX GB10 LPDDR5X: 9400 MT/s × 256-bit ÷ 8000 = ~301 GB/s (measured: 273 GB/s)
+          RTX 4090 GDDR6X: 21000 MT/s × 384-bit ÷ 8000 = 1,008 GB/s H100 SXM HBM3: 6400 MT/s × 5120-bit ÷ 8000 = 4,096
+          GB/s
+        </div>
+
+        <div class="bw-bars">
+          <div class="bw-row">
+            <div class="bw-label">H100 SXM HBM3</div>
+            <div class="bw-track"><div class="bw-fill" style="width: 100%; background: var(--green)"></div></div>
+            <div class="bw-val" style="color: var(--green)">3,350 GB/s</div>
+          </div>
+          <div class="bw-row">
+            <div class="bw-label">RTX 4090 GDDR6X</div>
+            <div class="bw-track"><div class="bw-fill" style="width: 30%; background: var(--blue)"></div></div>
+            <div class="bw-val" style="color: var(--blue)">1,008 GB/s</div>
+          </div>
+          <div class="bw-row">
+            <div class="bw-label">A4000 Ada GDDR6</div>
+            <div class="bw-track"><div class="bw-fill" style="width: 13.4%; background: var(--yellow)"></div></div>
+            <div class="bw-val" style="color: var(--yellow)">448 GB/s</div>
+          </div>
+          <div class="bw-row">
+            <div class="bw-label">RTX PRO 2000 GDDR7</div>
+            <div class="bw-track"><div class="bw-fill" style="width: 8.6%; background: var(--green)"></div></div>
+            <div class="bw-val" style="color: var(--green)">288 GB/s</div>
+          </div>
+          <div class="bw-row">
+            <div class="bw-label">DGX GB10 LPDDR5X</div>
+            <div class="bw-track"><div class="bw-fill" style="width: 8.2%; background: var(--purple)"></div></div>
+            <div class="bw-val" style="color: var(--purple)">273 GB/s</div>
+          </div>
+          <div class="bw-row">
+            <div class="bw-label">Desktop DDR5</div>
+            <div class="bw-track"><div class="bw-fill" style="width: 2.7%; background: var(--muted)"></div></div>
+            <div class="bw-val" style="color: var(--muted)">~89 GB/s</div>
+          </div>
+          <div class="bw-row">
+            <div class="bw-label">Jetson Orin Nano LPDDR5</div>
+            <div class="bw-track"><div class="bw-fill" style="width: 2%; background: var(--orange)"></div></div>
+            <div class="bw-val" style="color: var(--orange)">68 GB/s</div>
+          </div>
+        </div>
+
+        <h3><span class="dot" style="background: var(--yellow)"></span>Memory Type Guide</h3>
+        <div class="tw">
+          <table>
+            <thead>
+              <tr>
+                <th>Type</th>
+                <th>Bus Width</th>
+                <th>Typical BW</th>
+                <th>Power</th>
+                <th>Found In</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>LPDDR5</td>
+                <td>64–128 bit</td>
+                <td class="to">25–102 GB/s</td>
+                <td class="tg">Very low</td>
+                <td>Jetson Orin, phones, laptops</td>
+              </tr>
+              <tr>
+                <td>LPDDR5X</td>
+                <td>128–256 bit</td>
+                <td class="ty">120–300 GB/s</td>
+                <td class="tg">Low</td>
+                <td>DGX GB10, Apple M-series</td>
+              </tr>
+              <tr>
+                <td>GDDR6</td>
+                <td>256–384 bit</td>
+                <td class="tg">384–768 GB/s</td>
+                <td class="ty">High</td>
+                <td>RTX 3090, A4000 Ada</td>
+              </tr>
+              <tr>
+                <td>GDDR6X</td>
+                <td>256–384 bit</td>
+                <td class="tg">608–1152 GB/s</td>
+                <td class="ty">High</td>
+                <td>RTX 3090 Ti, 4090</td>
+              </tr>
+              <tr>
+                <td>GDDR7</td>
+                <td>128–256 bit</td>
+                <td class="tg">256–960 GB/s</td>
+                <td class="ty">Moderate</td>
+                <td>RTX PRO 2000, RTX 50 series</td>
+              </tr>
+              <tr>
+                <td>HBM2e</td>
+                <td>1024–4096 bit</td>
+                <td class="tg">800–2000 GB/s</td>
+                <td class="ty">Moderate</td>
+                <td>A100, MI300X</td>
+              </tr>
+              <tr>
+                <td>HBM3</td>
+                <td>1024–5120 bit</td>
+                <td class="tg">up to 3,350 GB/s</td>
+                <td class="ty">Moderate</td>
+                <td>H100, H200</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="callout y">
+          <div class="clabel">GDDR7 is different from GDDR6X</div>
+          GDDR7 (on your RTX PRO 2000) achieves high bandwidth with a narrower 128-bit bus by running at much higher
+          data rates (18,000+ MT/s) using PAM4 signaling. GDDR6X achieves similar bandwidth through a wider 384-bit bus
+          at moderate speeds. GDDR7 is more power-efficient per GB/s, which is why the RTX PRO 2000 achieves 288 GB/s at
+          only 70W — remarkable for a workstation card.
+        </div>
+      </section>
+
+      <!-- 05 -->
+      <section id="inference-eq">
+        <div class="snum">05 — The Inference Equation</div>
+        <h2>Why Inference Takes The Time<br />It Does: The Full Equation</h2>
+
+        <p>
+          Total inference latency is a sum of independent time budgets, each dominated by different hardware resources.
+          Understanding each term is how you pinpoint the real bottleneck and know which upgrade will actually matter.
+        </p>
+
+        <div class="eq-block">
+          <div class="eq-title">Total Inference Latency — Component Decomposition</div>
+          <div class="eq-main">
+            T_total = <span class="eq-o">T_transfer</span> + <span class="eq-g">T_compute</span> +
+            <span class="eq-b">T_memory</span> + <span class="eq-p">T_overhead</span>
+          </div>
+          <div class="eq-breakdown">
+            <div class="eq-term">
+              <div class="eq-sym" style="color: var(--orange)">T_transfer</div>
+              <div class="eq-desc">
+                PCIe copy: system RAM → GPU VRAM. Zero on unified-memory devices (Jetson, GB10). Scales with frame size
+                ÷ PCIe bandwidth. ~0.4 ms per frame on RTX PRO 2000.
+              </div>
+            </div>
+            <div class="eq-term">
+              <div class="eq-sym" style="color: var(--green)">T_compute</div>
+              <div class="eq-desc">
+                Math execution time on GPU cores. Bounded by TFLOPS at active precision. Minimized by Tensor Core
+                utilization and TensorRT layer fusion.
+              </div>
+            </div>
+            <div class="eq-term">
+              <div class="eq-sym" style="color: var(--blue)">T_memory</div>
+              <div class="eq-desc">
+                VRAM read/write for weights, activations, and intermediate tensors. Bounded by memory bandwidth (GB/s).
+                Usually the dominant term in optimized pipelines.
+              </div>
+            </div>
+            <div class="eq-term">
+              <div class="eq-sym" style="color: var(--purple)">T_overhead</div>
+              <div class="eq-desc">
+                Framework dispatch, Python GIL delays, kernel launch overhead, sync points. Dominates PyTorch. Near-zero
+                with TensorRT compiled engines. Often 5–15 ms on Jetson!
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <h3><span class="dot" style="background: var(--green)"></span>Arithmetic Intensity: Compute vs Memory Bound</h3>
+        <p>
+          The key concept linking TFLOPS and bandwidth is <strong>arithmetic intensity</strong> — computations performed
+          per byte of memory accessed. If your model's intensity is below the hardware's ratio (TFLOPS ÷ GB/s), you are
+          memory-bound — buying more TFLOPS won't help at all.
+        </p>
+
+        <div class="formula">
+          Arithmetic Intensity = FLOPs per inference ÷ Bytes transferred Roofline threshold = (TFLOPS × 1000) ÷
+          Bandwidth (GB/s) [FLOPs/byte]
+          <br />
+          Jetson Orin Nano FP16: 5,000 ÷ 68 = ~74 FLOPs/byte threshold RTX PRO 2000 FP16: 136,000 ÷ 288 = ~472
+          FLOPs/byte threshold DGX GB10 FP16: 250,000 ÷ 273 = ~916 FLOPs/byte threshold
+          <br />
+          YOLOv8s conv blocks: ~20–80 FLOPs/byte (varies by layer depth)
+          <span class="r">→ Most YOLO layers are memory-bound on ALL three devices</span>
+        </div>
+
+        <p>
+          This analysis reveals something counterintuitive: even the RTX PRO 2000 running YOLO is mostly memory-bound,
+          not compute-bound. Upgrading to a GPU with double the TFLOPS but the same bandwidth would give minimal
+          benefit. Improving bandwidth (or reducing data volume via FP16/INT8) directly reduces T_memory and delivers
+          proportional real-world speedup.
+        </p>
+
+        <h3><span class="dot" style="background: var(--blue)"></span>Per-Device Latency Budget: YOLOv8s at 640×640</h3>
+        <div class="tw">
+          <table>
+            <thead>
+              <tr>
+                <th>Component</th>
+                <th>Jetson Orin Nano</th>
+                <th>RTX PRO 2000</th>
+                <th>DGX GB10</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>T_transfer (PCIe)</td>
+                <td class="tg">0 ms (unified)</td>
+                <td class="ty">~0.4 ms</td>
+                <td class="tg">0 ms (C2C)</td>
+              </tr>
+              <tr>
+                <td>T_compute (FP16)</td>
+                <td class="to">~8–12 ms</td>
+                <td class="tg">~0.8–2 ms</td>
+                <td class="tg">~0.6–1.5 ms</td>
+              </tr>
+              <tr>
+                <td>T_memory (bandwidth)</td>
+                <td class="to">~6–10 ms</td>
+                <td class="tg">~1–2 ms</td>
+                <td class="ty">~1.5–2.5 ms</td>
+              </tr>
+              <tr>
+                <td>T_overhead (PyTorch)</td>
+                <td class="to">~8–15 ms</td>
+                <td class="to">~4–8 ms</td>
+                <td class="to">~4–8 ms</td>
+              </tr>
+              <tr>
+                <td>T_overhead (TensorRT)</td>
+                <td class="tg">&lt;0.5 ms</td>
+                <td class="tg">&lt;0.3 ms</td>
+                <td class="tg">&lt;0.3 ms</td>
+              </tr>
+              <tr>
+                <td><strong>Total: PyTorch FP32</strong></td>
+                <td class="to">35–55 ms</td>
+                <td class="ty">10–18 ms</td>
+                <td class="ty">8–14 ms</td>
+              </tr>
+              <tr>
+                <td><strong>Total: TensorRT FP16</strong></td>
+                <td class="ty">15–25 ms</td>
+                <td class="tg">2–5 ms</td>
+                <td class="tg">3–6 ms</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>
+          <span class="dot" style="background: var(--purple)"></span>Layer Fusion: Attacking T_memory at the Source
+        </h3>
+        <div class="mc">
+          <div class="mcard pt">
+            <div class="mcard-title">PyTorch — 3 VRAM Round-Trips / Block</div>
+            <div class="tl">
+              <div class="tli">
+                <div class="tll" style="color: var(--orange)">READ from VRAM</div>
+                <div class="tlt">Load image for Convolution</div>
+              </div>
+              <div class="tli">
+                <div class="tll" style="color: var(--orange)">WRITE to VRAM</div>
+                <div class="tlt">Store conv output</div>
+              </div>
+              <div class="tli">
+                <div class="tll" style="color: var(--orange)">READ again → BatchNorm</div>
+                <div class="tlt">Second full round-trip</div>
+              </div>
+              <div class="tli">
+                <div class="tll" style="color: var(--orange)">WRITE → READ → ReLU</div>
+                <div class="tlt">Third full round-trip</div>
+              </div>
+            </div>
+          </div>
+          <div class="mcard trt">
+            <div class="mcard-title">TensorRT — 1 VRAM Round-Trip / Block</div>
+            <div class="tl">
+              <div class="tli">
+                <div class="tll">READ from VRAM — once</div>
+                <div class="tlt">Load image into GPU L1 cache / registers</div>
+              </div>
+              <div class="tli">
+                <div class="tll">Conv + BN + ReLU in registers</div>
+                <div class="tlt">All three ops run inside fast on-chip cache — no VRAM access</div>
+              </div>
+              <div class="tli">
+                <div class="tll">WRITE to VRAM — once</div>
+                <div class="tlt">Only the final fused result is committed</div>
+              </div>
+            </div>
+            <p style="font-size: 12px; color: var(--green); margin-top: 12px">
+              ≈ 3–6× fewer VRAM transfers per YOLO block
+            </p>
+          </div>
+        </div>
+
+        <div class="callout">
+          <div class="clabel">T_overhead on the Jetson Is Enormous</div>
+          Notice that on the Jetson Orin Nano, PyTorch framework overhead (8–15 ms) often <em>exceeds</em> the actual
+          compute + memory time combined. On the RTX PRO 2000, TensorRT's elimination of this overhead alone cuts total
+          latency by 50–70%. Overhead removal is not a marginal optimization — it is frequently the single largest
+          performance gain available.
+        </div>
+      </section>
+
+      <!-- 06 -->
+      <section id="formats">
+        <div class="snum">06 — Model Lifecycle</div>
+        <h2>PyTorch · ONNX · TensorRT<br />The Three File Formats</h2>
+
+        <div class="flow">
+          <div class="fs fo">
+            <div class="fsl">Training</div>
+            <div class="fsn">PyTorch</div>
+            <div class="fse">.pt / .pth</div>
+          </div>
+          <div class="fa">→</div>
+          <div class="fs fb">
+            <div class="fsl">Interop Bridge</div>
+            <div class="fsn">ONNX</div>
+            <div class="fse">.onnx</div>
+          </div>
+          <div class="fa">→</div>
+          <div class="fs fg">
+            <div class="fsl">Production</div>
+            <div class="fsn">TensorRT</div>
+            <div class="fse">.engine</div>
+          </div>
+        </div>
+
+        <div class="tw">
+          <table>
+            <thead>
+              <tr>
+                <th>Property</th>
+                <th>PyTorch (.pt)</th>
+                <th>ONNX (.onnx)</th>
+                <th>TensorRT (.engine)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Primary use</td>
+                <td>Training, research</td>
+                <td>Portability bridge</td>
+                <td>Production inference</td>
+              </tr>
+              <tr>
+                <td>Hardware portable</td>
+                <td class="tg">Yes</td>
+                <td class="tg">Yes</td>
+                <td class="tr">No — GPU-locked</td>
+              </tr>
+              <tr>
+                <td>Framework needed</td>
+                <td class="to">PyTorch (1–2 GB)</td>
+                <td class="ty">ONNX Runtime</td>
+                <td class="tg">TRT runtime (~50 MB)</td>
+              </tr>
+              <tr>
+                <td>Layer fusion</td>
+                <td class="to">None</td>
+                <td class="to">None</td>
+                <td class="tg">Automatic</td>
+              </tr>
+              <tr>
+                <td>Kernel auto-tune</td>
+                <td class="to">No</td>
+                <td class="to">No</td>
+                <td class="tg">Yes (per GPU model)</td>
+              </tr>
+              <tr>
+                <td>FP16/INT8/FP4</td>
+                <td class="ty">Manual only</td>
+                <td class="ty">Partial</td>
+                <td class="tg">Native + calibrated</td>
+              </tr>
+              <tr>
+                <td>VRAM overhead</td>
+                <td class="to">1–2 GB framework</td>
+                <td class="ty">Moderate</td>
+                <td class="tg">~50 MB</td>
+              </tr>
+              <tr>
+                <td>DLA (Jetson AGX)</td>
+                <td class="to">No</td>
+                <td class="to">No</td>
+                <td class="tg">Yes</td>
+              </tr>
+              <tr>
+                <td>MPS compatible</td>
+                <td class="ty">Partially</td>
+                <td class="ty">Partially</td>
+                <td class="tg">Fully</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="callout o">
+          <div class="clabel">The Golden Rule of Engine Files</div>
+          A <code>.engine</code> file compiled on the RTX PRO 2000 will
+          <strong>not run on the Jetson Orin Nano</strong>. The engine embeds kernel selections, memory layout
+          decisions, and compute paths specific to the exact GPU architecture and TensorRT version it was compiled on.
+          Copy the <code>.onnx</code> file to the Jetson and run <code>trtexec</code> natively. This is not a limitation
+          — it is the source of TensorRT's performance advantage.
+        </div>
+      </section>
+
+      <!-- 07 -->
+      <section id="math">
+        <div class="snum">07 — Neural Network Math</div>
+        <h2>Convolution, BatchNorm &amp; ReLU:<br />What the GPU Is Actually Computing</h2>
+
+        <h3><span class="dot" style="background: var(--blue)"></span>Convolution — The Feature Extractor</h3>
+        <p>
+          A convolution slides a small filter kernel (typically 3×3 or 5×5) across every pixel of the image. At each
+          position, it performs an element-wise multiply-accumulate between the filter weights and the underlying pixels
+          — a dot product that produces one output value highlighting whether the learned pattern is present at that
+          location. YOLOv8s performs approximately <strong>28.6 billion</strong> such multiply-accumulate operations per
+          640×640 frame.
+        </p>
+        <p>
+          Early layers detect simple features (edges, gradients). Deeper layers detect complex semantics (vehicle
+          bumpers, license plate frames, character boundaries). The entire YOLO detection pipeline is essentially a
+          cascade of increasingly abstract convolutions.
+        </p>
+
+        <h3><span class="dot" style="background: var(--yellow)"></span>Batch Normalization — The Stabilizer</h3>
+        <p>
+          After convolution, output values can explode or vanish without constraint, destabilizing training. BatchNorm
+          normalizes each feature channel by subtracting its running mean and dividing by its running variance. During
+          inference, the mean and variance are frozen constants — reducing BatchNorm to a simple linear rescale per
+          channel. TensorRT algebraically absorbs this into the preceding convolution's weights during compilation,
+          <strong>eliminating BatchNorm as a separate GPU operation entirely</strong>.
+        </p>
+
+        <h3><span class="dot" style="background: var(--purple)"></span>ReLU / SiLU — The Non-Linearity</h3>
+        <p>
+          ReLU: <code>f(x) = max(0, x)</code>. SiLU (used in YOLO): <code>f(x) = x × sigmoid(x)</code>. Both introduce
+          the non-linearity that allows stacked convolutions to model complex curved decision boundaries — without
+          activation functions, any depth of linear layers collapses to a single linear transformation. TensorRT fuses
+          activation functions directly into the preceding convolution kernel — they execute on the same data while it
+          is still in the GPU's register file, before any write to VRAM.
+        </p>
+
+        <div class="callout">
+          <div class="clabel">The Real Bottleneck Is Memory, Not Math</div>
+          5th Gen Tensor Cores on the RTX PRO 2000 can complete a full 8×16 × 16×8 matrix multiplication in a single
+          clock cycle. The bottleneck is not the arithmetic — it is the rate at which VRAM can deliver the operands to
+          the compute units. TensorRT's layer fusion directly reduces this data volume, which is why it often delivers
+          larger gains than raw TFLOPS improvements would suggest.
+        </div>
+      </section>
+
+      <!-- 08 -->
+      <section id="precision">
+        <div class="snum">08 — Numerical Precision</div>
+        <h2>FP32 · FP16 · INT8 · FP4<br />Precision and Calibration</h2>
+
+        <div class="tw">
+          <table>
+            <thead>
+              <tr>
+                <th>Format</th>
+                <th>Bits</th>
+                <th>VRAM vs FP32</th>
+                <th>Throughput vs FP32</th>
+                <th>Accuracy impact (YOLO)</th>
+                <th>Recommended for</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>FP32</td>
+                <td>32</td>
+                <td>1×</td>
+                <td class="to">1×</td>
+                <td>None</td>
+                <td>Training</td>
+              </tr>
+              <tr>
+                <td>BF16</td>
+                <td>16</td>
+                <td>0.5×</td>
+                <td class="ty">2–3×</td>
+                <td>&lt;0.3% mAP</td>
+                <td>Training stability</td>
+              </tr>
+              <tr>
+                <td>FP16</td>
+                <td>16</td>
+                <td>0.5×</td>
+                <td class="tg">2–4× (Tensor Cores)</td>
+                <td>&lt;0.5% mAP</td>
+                <td>Production inference ✓</td>
+              </tr>
+              <tr>
+                <td>INT8</td>
+                <td>8</td>
+                <td>0.25×</td>
+                <td class="tg">4–6×</td>
+                <td>&lt;1.5% mAP calibrated</td>
+                <td>Edge (Jetson) inference</td>
+              </tr>
+              <tr>
+                <td>FP4</td>
+                <td>4</td>
+                <td>0.125×</td>
+                <td class="tg">8–10×</td>
+                <td>Severe for vision</td>
+                <td>LLM weights only</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3><span class="dot" style="background: var(--green)"></span>FP16 — The Sweet Spot for YOLO on Blackwell</h3>
+        <p>
+          Switching YOLO from FP32 to FP16 with TensorRT delivers: 50% VRAM reduction, 50% lower memory bandwidth demand
+          (directly halving T_memory), full 5th Gen Tensor Core utilization at 136 TFLOPS, and real-world mAP drop under
+          0.5% — invisible to the system. For your VMS pipeline on the RTX PRO 2000, FP16 TensorRT is the correct
+          production configuration.
+        </p>
+
+        <h3><span class="dot" style="background: var(--orange)"></span>INT8 Calibration — For the Jetson Orin Nano</h3>
+        <p>
+          INT8 is worth pursuing on the Jetson where every millisecond counts. The key is <strong>calibration</strong>:
+          TensorRT runs ~500–1000 representative images through the FP32 model, observes the actual activation value
+          distribution layer by layer, and computes <em>scale factors</em> that map each layer's dynamic range into the
+          INT8 range [-128, 127] with minimum quantization error. Without calibration, INT8 destroys accuracy. With
+          proper calibration on a dataset from your actual camera feeds, mAP typically drops under 1.5% while cutting
+          T_memory by 75% and T_compute by 4–6×.
+        </p>
+
+        <h3><span class="dot" style="background: var(--purple)"></span>FP4 — Blackwell Only, LLMs Only (For Now)</h3>
+        <p>
+          The 5th Gen Tensor Cores on both the RTX PRO 2000 and DGX GB10 support NVIDIA's FP4 format. For YOLO's
+          relatively compact weight matrices, FP4 quantization destroys detection accuracy below acceptable thresholds.
+          FP4 is currently useful only for LLM inference where the goal is fitting enormous weight matrices into memory
+          — not for computer vision models. INT8 is the precision floor for YOLO.
+        </p>
+      </section>
+
+      <!-- 09 -->
+      <section id="async">
+        <div class="snum">09 — Execution Model</div>
+        <h2>PyTorch vs TensorRT:<br />How They Actually Talk to the GPU</h2>
+
+        <p>
+          Both live in your Python process on the CPU. The difference is how much conversation each requires during a
+          forward pass — and that conversation cost is the entirety of T_overhead.
+        </p>
+
+        <h3><span class="dot" style="background: var(--orange)"></span>PyTorch: Dynamic Graph, Runtime Dispatch</h3>
+        <p>
+          PyTorch constructs its execution graph at runtime for every forward pass. For each operator, the CPU thread:
+          selects a cuDNN algorithm, allocates temporary tensors, dispatches the kernel to the GPU command queue, then
+          optionally waits. The Python GIL means this dispatch loop runs single-threaded — you cannot be fetching the
+          next Redis frame while PyTorch is occupied dispatching the current batch's operators.
+        </p>
+
+        <h3><span class="dot" style="background: var(--green)"></span>TensorRT: Compiled Engine, Fire-and-Forget</h3>
+        <p>
+          The <code>.engine</code> binary contains a fully pre-planned execution sequence with pre-allocated
+          input/output buffers. At inference time the CPU: copies the frame into the pre-allocated input buffer, calls
+          <code>execute_async_v2</code>, and is immediately freed. The GPU runs the full network from its compiled plan
+          without any further CPU involvement. In production C++ pipelines, the CPU preprocesses the next frame while
+          the GPU finishes the current one — true pipeline parallelism.
+        </p>
+
+        <div class="callout b">
+          <div class="clabel">The Python Sync Point</div>
+          Ultralytics' <code>results = model(frame)</code> inserts a hidden <code>torch.cuda.synchronize()</code> that
+          blocks the CPU until the GPU signals completion. This makes code predictable but wastes CPU/GPU overlap. In a
+          production C++ GStreamer + TensorRT pipeline, eliminating this sync and using CUDA Streams with completion
+          callbacks is how professional VMS systems achieve 60+ FPS per camera with near-zero end-to-end latency.
+        </div>
+      </section>
+
+      <!-- 10 -->
+      <section id="batching">
+        <div class="snum">10 — Throughput Scaling</div>
+        <h2>Dynamic Batching: The Correct<br />Way to Saturate a GPU</h2>
+
+        <p>
+          A GPU processes work in <strong>warps</strong> — groups of 32 threads executing the same instruction
+          simultaneously. Processing one 640×640 frame fills a small fraction of the available warps. Batching stacks
+          multiple frames into a single tensor, filling the warp pool and approaching true hardware saturation.
+        </p>
+
+        <div class="hb">
+          <p>
+            <strong>Real-world numbers (RTX PRO 2000, TensorRT FP16):</strong> batch=1 → ~4 ms. batch=4 → ~5–6 ms.
+            batch=8 → ~6–7 ms. You get 4–8× the camera throughput for only 25–75% more latency per batch cycle. This is
+            why a single TensorRT consumer with batch=8 outperforms eight separate PyTorch consumers — without any of
+            the time-slicing, memory explosion, or PCIe saturation problems.
+          </p>
+        </div>
+
+        <pre data-lang="python"><code><span class="kw">class</span> BatchingConsumer:
+    <span class="kw">def</span> __init__(self, model, batch_size=<span class="num">4</span>, max_wait_ms=<span class="num">15</span>):
+        self.model = model
+        self.batch_size = batch_size
+        self.max_wait_ms = max_wait_ms
+        self.pending = []  <span class="cm"># (message, decoded_frame)</span>
+
+    <span class="kw">def</span> consume(self):
+        deadline = time.monotonic() + self.max_wait_ms / <span class="num">1000</span>
+        <span class="kw">while</span> len(self.pending) &lt; self.batch_size <span class="kw">and</span> time.monotonic() &lt; deadline:
+            msg = self.rabbitmq.poll(timeout_ms=<span class="num">2</span>)
+            <span class="kw">if</span> msg:
+                raw = self.redis.get_frame(msg[<span class="str">'frame_key'</span>])
+                frame = cv2.imdecode(raw, cv2.IMREAD_COLOR)
+                self.pending.append((msg, frame))
+
+        <span class="kw">if not</span> self.pending: <span class="kw">return</span>
+
+        messages, frames = zip(*self.pending)
+        batch = np.stack(frames)           <span class="cm"># shape: (N, H, W, C)</span>
+        results = self.model(batch)        <span class="cm"># single GPU call for all N frames</span>
+
+        <span class="kw">for</span> msg, result <span class="kw">in</span> zip(messages, results):
+            self.publish_detection(msg[<span class="str">'camera_id'</span>], result)
+        self.pending = []</code></pre>
+
+        <pre data-lang="bash"><code><span class="cm"># Build TensorRT engine with dynamic batch support</span>
+/usr/src/tensorrt/bin/trtexec \
+  --onnx=yolov8s.onnx \
+  --saveEngine=yolov8s_batch.engine \
+  --fp16 \
+  --minShapes=input:<span class="num">1</span>x3x640x640 \
+  --optShapes=input:<span class="num">4</span>x3x640x640 \
+  --maxShapes=input:<span class="num">8</span>x3x640x640</code></pre>
+      </section>
+
+      <!-- 11 -->
+      <section id="scaling">
+        <div class="snum">11 — Consumer Scaling</div>
+        <h2>Why Multiple PyTorch Consumers<br />Made Inference Slower</h2>
+
+        <p>
+          When you spawned two PyTorch consumers and inference time doubled, you triggered three simultaneous
+          hardware-level problems:
+        </p>
+        <ul>
+          <li>
+            <strong>GPU time-slicing:</strong> The GPU does not run two processes in parallel. The driver saves Process
+            A's entire GPU state, loads Process B, runs it briefly, saves B, reloads A. Each context switch on a complex
+            model costs 5–20 ms — more than just running sequentially.
+          </li>
+          <li>
+            <strong>CUDA context VRAM tax:</strong> Every PyTorch process consumes 1–2 GB of VRAM just for framework
+            overhead before any model loads. On the Jetson Orin Nano's 8 GB shared pool, two consumers triggered memory
+            swap — turning 30 ms inference into 300 ms+.
+          </li>
+          <li>
+            <strong>PCIe bus collision:</strong> Multiple consumers simultaneously pushing FP32 frames across PCIe 5.0
+            x8 saturate the bus below its theoretical peak, starving the GPU of data.
+          </li>
+        </ul>
+
+        <div class="metric-row">
+          <div class="mname">CUDA context VRAM overhead</div>
+          <div class="mvals">
+            <div class="mval">
+              <span class="v" style="color: var(--orange)">1–2 GB</span><span class="vl">PYTORCH</span>
+            </div>
+            <div class="mval">
+              <span class="v" style="color: var(--green)">~50 MB</span><span class="vl">TENSORRT</span>
+            </div>
+          </div>
+        </div>
+        <div class="metric-row">
+          <div class="mname">PCIe transfers per frame</div>
+          <div class="mvals">
+            <div class="mval">
+              <span class="v" style="color: var(--orange)">Many small</span><span class="vl">PYTORCH</span>
+            </div>
+            <div class="mval">
+              <span class="v" style="color: var(--green)">One large</span><span class="vl">TENSORRT</span>
+            </div>
+          </div>
+        </div>
+        <div class="metric-row">
+          <div class="mname">CPU blocked during inference</div>
+          <div class="mvals">
+            <div class="mval">
+              <span class="v" style="color: var(--orange)">Yes (GIL)</span><span class="vl">PYTORCH</span>
+            </div>
+            <div class="mval">
+              <span class="v" style="color: var(--green)">No (async)</span><span class="vl">TENSORRT</span>
+            </div>
+          </div>
+        </div>
+        <div class="metric-row">
+          <div class="mname">Multi-process GPU sharing</div>
+          <div class="mvals">
+            <div class="mval">
+              <span class="v" style="color: var(--orange)">Time-sliced</span><span class="vl">PYTORCH</span>
+            </div>
+            <div class="mval">
+              <span class="v" style="color: var(--green)">MPS spatial</span><span class="vl">TENSORRT</span>
+            </div>
+          </div>
+        </div>
+        <div class="metric-row">
+          <div class="mname">Max consumers before OOM (Jetson 8GB)</div>
+          <div class="mvals">
+            <div class="mval">
+              <span class="v" style="color: var(--orange)">1 (maybe 2)</span><span class="vl">PYTORCH</span>
+            </div>
+            <div class="mval">
+              <span class="v" style="color: var(--green)">8–12</span><span class="vl">TENSORRT</span>
+            </div>
+          </div>
+        </div>
+
+        <h3>
+          <span class="dot" style="background: var(--purple)"></span>DLA: Running Two Models Simultaneously on Jetson
+          AGX
+        </h3>
+        <p>
+          Jetson AGX Orin and Orin NX modules (not the Nano) include Deep Learning Accelerator (DLA) cores — dedicated
+          fixed-function silicon for CNN inference that runs entirely independently from the GPU. TensorRT can target
+          the DLA: ANPR model on DLA core 0, YOLO on the GPU simultaneously, zero contention. The Orin Nano does not
+          have DLA — this capability requires the NX or AGX modules.
+        </p>
+
+        <pre data-lang="bash"><code><span class="cm"># Compile ANPR for DLA — runs in parallel with GPU model</span>
+/usr/src/tensorrt/bin/trtexec \
+  --onnx=anpr.onnx --saveEngine=anpr_dla.engine \
+  --int8 --useDLACore=<span class="num">0</span> --allowGPUFallback</code></pre>
+      </section>
+
+      <!-- 12 -->
+      <section id="mps">
+        <div class="snum">12 — Multi-Process Service</div>
+        <h2>NVIDIA MPS: True Spatial<br />GPU Sharing Across Processes</h2>
+
+        <p>
+          MPS (Multi-Process Service) eliminates time-slicing by merging multiple process CUDA streams into a single GPU
+          client. Instead of processes competing for the GPU sequentially, MPS assigns them non-overlapping spatial
+          partitions of the compute core grid — they execute simultaneously on different physical cores.
+        </p>
+        <p>
+          MPS is supported on all NVIDIA GPUs from Kepler (2012) onwards, including your RTX PRO 2000. It is Linux-only,
+          runs as a daemon, and requires no changes to your Python code — TensorRT processes automatically talk to the
+          MPS server rather than directly to the GPU.
+        </p>
+
+        <pre data-lang="bash"><code><span class="cm"># Enable MPS</span>
+sudo nvidia-smi -i <span class="num">0</span> -c EXCLUSIVE_PROCESS
+<span class="kw">export</span> CUDA_VISIBLE_DEVICES=<span class="num">0</span>
+nvidia-cuda-mps-control -d
+echo <span class="str">"get_server_list"</span> | nvidia-cuda-mps-control   <span class="cm"># verify</span>
+
+<span class="cm"># Run TensorRT consumers normally — MPS intercepts automatically</span>
+python inference_consumer.py &amp;
+python inference_consumer.py &amp;
+python inference_consumer.py &amp;
+python inference_consumer.py &amp;
+
+<span class="cm"># ── Shutdown ─────────────────────────────────────────────</span>
+echo <span class="str">"quit"</span> | nvidia-cuda-mps-control
+sudo nvidia-smi -i <span class="num">0</span> -c DEFAULT</code></pre>
+
+        <div class="callout p">
+          <div class="clabel">MPS + TensorRT on RTX PRO 2000</div>
+          Four TensorRT consumers under MPS can approach 90–95% GPU utilization with stable per-frame latency.
+          TensorRT's ~50 MB CUDA context (vs PyTorch's 1–2 GB) means MPS has almost nothing to manage, making
+          coordination overhead near-zero. This combination allows a single RTX PRO 2000 to comfortably process 30–60
+          camera streams running YOLO + ANPR.
+        </div>
+      </section>
+
+      <!-- 13 -->
+      <section id="decision">
+        <div class="snum">13 — Decision Guide</div>
+        <h2>Choosing the Right Hardware,<br />Framework &amp; Precision</h2>
+
+        <p>
+          Beyond raw specs, these practical factors determine the correct deployment choice for each scenario in a VMS
+          pipeline.
+        </p>
+
+        <div class="dgrid">
+          <div class="dcard">
+            <div class="dcard-icon">📦</div>
+            <div class="dcard-title">Model Count vs VRAM</div>
+            <div class="dcard-body">
+              YOLOv8s FP16 ≈ 22 MB. PaddleOCR + YOLO + tracker simultaneously ≈ 1–3 GB. If you need 5+ models
+              concurrently or LLM-based scene understanding, only the DGX GB10's 128 GB pool provides headroom. The RTX
+              PRO 2000's 16 GB handles most multi-model VMS configurations.
+            </div>
+          </div>
+          <div class="dcard">
+            <div class="dcard-icon">⚡</div>
+            <div class="dcard-title">Latency vs Throughput</div>
+            <div class="dcard-body">
+              Hard real-time crossing detection (&lt;50 ms end-to-end) → RTX PRO 2000 + TRT FP16. Maximum camera count
+              (throughput over latency) → RTX PRO 2000 + TRT + batching + MPS. Research and model exploration → DGX GB10
+              (huge memory eliminates OOM barriers).
+            </div>
+          </div>
+          <div class="dcard">
+            <div class="dcard-icon">🔋</div>
+            <div class="dcard-title">Power Envelope</div>
+            <div class="dcard-body">
+              Battery / remote / sealed enclosure → Jetson Orin Nano (25W max). Standard workstation PSU → RTX PRO 2000
+              (70W, no aux power connector required). Dedicated AI workstation with full power delivery → DGX Spark
+              (140W, 240W USB-C or standard PSU).
+            </div>
+          </div>
+          <div class="dcard">
+            <div class="dcard-icon">🛡️</div>
+            <div class="dcard-title">ECC Memory (24/7 Production)</div>
+            <div class="dcard-body">
+              The RTX PRO 2000 supports full GDDR7 ECC — it silently detects and corrects single-bit memory errors. For
+              24/7 production VMS deployments, a single uncorrected bit flip could corrupt a detection result or crash a
+              systemd service. Consumer RTX cards lack ECC. The Pro line is worth the premium for always-on systems.
+            </div>
+          </div>
+          <div class="dcard">
+            <div class="dcard-icon">🔄</div>
+            <div class="dcard-title">PaddleOCR + TensorRT Path</div>
+            <div class="dcard-body">
+              PaddleOCR's TensorRT path requires: PaddlePaddle → ONNX export → TensorRT compilation. Some ops require
+              opset tuning. If PaddlePaddle GPU is unstable (SIGSEGV, memory corruption in 3.x), downgrade to stable
+              2.8.1 + PaddlePaddle 2.6.2 regardless of GPU. TensorRT engine stability is a framework issue, not a
+              hardware one.
+            </div>
+          </div>
+          <div class="dcard">
+            <div class="dcard-icon">📡</div>
+            <div class="dcard-title">Camera Count Targets</div>
+            <div class="dcard-body">
+              Jetson Orin Nano: 2–6 cameras at 1080p30, YOLO + ANPR, TRT INT8. RTX PRO 2000 (TRT FP16 + MPS + batch=8):
+              30–60 cameras. RTX PRO 2000 cluster: 100+ cameras. Above ~60 streams, the bottleneck shifts from GPU to
+              CPU decode and network I/O, not inference.
+            </div>
+          </div>
+          <div class="dcard">
+            <div class="dcard-icon">💰</div>
+            <div class="dcard-title">Cost per Camera Stream</div>
+            <div class="dcard-body">
+              RTX PRO 2000 (~$800) × 50 streams = $16/stream. DGX Spark (~$4000) × 60 streams = $67/stream. Jetson Orin
+              Nano (~$249) × 4 streams = $62/stream. For pure throughput economics at scale, discrete workstation GPUs
+              win decisively over both edge SoCs and compact AI desktops.
+            </div>
+          </div>
+          <div class="dcard">
+            <div class="dcard-icon">🧠</div>
+            <div class="dcard-title">Future Model Requirements</div>
+            <div class="dcard-body">
+              YOLOv11 multimodal, LLM-based scene understanding, vision-language models → DGX GB10 (128 GB + FP4 +
+              Blackwell). Upgraded YOLO versions, better ANPR accuracy → RTX PRO 2000 (same pipeline, just retrain and
+              re-export engine). Staying on current YOLO/ANPR stack indefinitely → Jetson is sufficient at the edge.
+            </div>
+          </div>
+        </div>
+
+        <h3><span class="dot" style="background: var(--green)"></span>VMS Deployment Recommendation Matrix</h3>
+        <div class="tw">
+          <table>
+            <thead>
+              <tr>
+                <th>Scenario</th>
+                <th>Device</th>
+                <th>Framework</th>
+                <th>Precision</th>
+                <th>Notes</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Field camera, 2–6 streams</td>
+                <td class="ty">Jetson Orin Nano</td>
+                <td class="tg">TensorRT</td>
+                <td>INT8 calibrated</td>
+                <td>Enable MAXN Super mode</td>
+              </tr>
+              <tr>
+                <td>Server, 20–60 streams</td>
+                <td class="tg">RTX PRO 2000</td>
+                <td class="tg">TRT + MPS</td>
+                <td>FP16</td>
+                <td>batch=4–8, 4 consumers</td>
+              </tr>
+              <tr>
+                <td>Multi-model 5+ concurrent</td>
+                <td class="tg">DGX Spark GB10</td>
+                <td class="tg">TRT</td>
+                <td>FP16 / INT8</td>
+                <td>128 GB fits everything</td>
+              </tr>
+              <tr>
+                <td>Research / prototyping</td>
+                <td class="tg">DGX Spark GB10</td>
+                <td class="ty">PyTorch → TRT</td>
+                <td>FP32 → FP16</td>
+                <td>No OOM barriers</td>
+              </tr>
+              <tr>
+                <td>24/7 production, HA</td>
+                <td class="tg">RTX PRO 2000 (ECC)</td>
+                <td class="tg">TRT</td>
+                <td>FP16</td>
+                <td>ECC critical for reliability</td>
+              </tr>
+              <tr>
+                <td>Jetson AGX Orin</td>
+                <td class="tg">AGX Orin</td>
+                <td class="tg">TRT</td>
+                <td>INT8</td>
+                <td>Use DLA for ANPR, GPU for YOLO</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- 14 -->
+      <section id="commands">
+        <div class="snum">14 — Reference</div>
+        <h2>Production Command Reference</h2>
+
+        <h3><span class="dot" style="background: var(--green)"></span>Export Pipeline</h3>
+        <pre data-lang="python"><code><span class="cm"># Ultralytics YOLO — quick export</span>
+<span class="kw">from</span> ultralytics <span class="kw">import</span> YOLO
+model = YOLO(<span class="str">"yolov8s.pt"</span>)
+model.export(format=<span class="str">"onnx"</span>, opset=<span class="num">12</span>, dynamic=<span class="kw">True</span>)
+model.export(format=<span class="str">"engine"</span>, half=<span class="kw">True</span>, device=<span class="num">0</span>)
+
+<span class="cm"># Manual ONNX export (custom / PaddleOCR models)</span>
+<span class="kw">import</span> torch
+model = torch.load(<span class="str">"custom.pth"</span>).eval().cuda()
+dummy = torch.randn(<span class="num">1</span>, <span class="num">3</span>, <span class="num">640</span>, <span class="num">640</span>).cuda()
+torch.onnx.export(model, dummy, <span class="str">"model.onnx"</span>,
+    opset_version=<span class="num">12</span>, do_constant_folding=<span class="kw">True</span>,
+    input_names=[<span class="str">'input'</span>], output_names=[<span class="str">'output'</span>],
+    dynamic_axes={<span class="str">'input'</span>: {<span class="num">0</span>: <span class="str">'batch'</span>}, <span class="str">'output'</span>: {<span class="num">0</span>: <span class="str">'batch'</span>}})</code></pre>
+
+        <pre data-lang="bash"><code><span class="cm"># Standard FP16 engine — RTX PRO 2000 workstation</span>
+/usr/src/tensorrt/bin/trtexec \
+  --onnx=model.onnx --saveEngine=model_fp16.engine \
+  --fp16 --workspace=<span class="num">4096</span>
+
+<span class="cm"># Dynamic batch — for queue architecture (batch 1–8)</span>
+/usr/src/tensorrt/bin/trtexec \
+  --onnx=model.onnx --saveEngine=model_dynamic.engine --fp16 \
+  --minShapes=input:<span class="num">1</span>x3x640x640 \
+  --optShapes=input:<span class="num">4</span>x3x640x640 \
+  --maxShapes=input:<span class="num">8</span>x3x640x640
+
+<span class="cm"># INT8 with calibration — Jetson Orin Nano</span>
+/usr/src/tensorrt/bin/trtexec \
+  --onnx=model.onnx --saveEngine=model_int8.engine \
+  --int8 --calib=calibration.bin
+
+<span class="cm"># DLA target — Jetson AGX Orin / NX only</span>
+/usr/src/tensorrt/bin/trtexec \
+  --onnx=anpr.onnx --saveEngine=anpr_dla.engine \
+  --int8 --useDLACore=<span class="num">0</span> --allowGPUFallback
+
+<span class="cm"># Benchmark and validate engine</span>
+/usr/src/tensorrt/bin/trtexec \
+  --loadEngine=model_fp16.engine \
+  --batch=<span class="num">4</span> --iterations=<span class="num">200</span> --warmUp=<span class="num">500</span></code></pre>
+
+        <h3><span class="dot" style="background: var(--blue)"></span>Diagnostics</h3>
+        <pre data-lang="bash"><code><span class="cm"># GPU utilization, VRAM, compute, temperature — 1s</span>
+nvidia-smi dmon -s pucmt -d <span class="num">1</span>
+
+<span class="cm"># Full hardware detail incl. memory specs</span>
+nvidia-smi -q -d MEMORY
+
+<span class="cm"># Jetson realtime: EMC bandwidth %, GPU %, temps, power</span>
+sudo tegrastats
+
+<span class="cm"># Set Jetson Orin Nano Super to max performance</span>
+sudo nvpmodel -m <span class="num">2</span> &amp;&amp; sudo jetson_clocks
+
+<span class="cm"># System RAM type, speed, bus width</span>
+sudo dmidecode --type memory | grep -i <span class="str">"Speed\|Data Width\|Type:"</span>
+
+<span class="cm"># CUDA bandwidth microbenchmark</span>
+/usr/local/cuda/samples/bin/x86_64/linux/release/bandwidthTest</code></pre>
+
+        <h3><span class="dot" style="background: var(--yellow)"></span>Bandwidth Quick Reference</h3>
+        <div class="formula">
+          Formula: Bandwidth (GB/s) = (Speed MT/s × Bus Width bits) ÷ 8000
+          <br /><br />
+          Jetson Orin Nano 8GB: 3200 × 128 ÷ 8000 = 51.2 GB/s (spec: ~68 GB/s) RTX PRO 2000 GDDR7: 18000 × 128 ÷ 8000 =
+          288 GB/s DGX GB10 LPDDR5X: 9400 × 256 ÷ 8000 = 301 GB/s (measured: 273 GB/s) RTX 4090 GDDR6X: 21000 × 384 ÷
+          8000 = 1,008 GB/s H100 SXM5 HBM3: 6400 × 5120 ÷ 8000 = 4,096 GB/s
+          <span class="r"
+            >Bandwidth is often the primary inference bottleneck — optimize data volume (FP16/INT8) before adding
+            compute</span
+          >
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <p>
+        GPU Inference Engineering — VMS / Samiksha Platform &nbsp;·&nbsp; Jetson Orin Nano · RTX PRO 2000 Blackwell ·
+        DGX Spark GB10 &nbsp;·&nbsp; For GitHub Pages
+      </p>
+    </footer>
+  </body>
+</html>
