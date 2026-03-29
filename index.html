@@ -893,6 +893,49 @@
         margin: 0;
         letter-spacing: 0.05em;
       }
+
+      /* New CSS for Q&A section */
+      .qa-block {
+        margin-bottom: 40px;
+      }
+      .qa-q {
+        font-family: var(--sans);
+        font-size: 18px;
+        font-weight: 500;
+        color: var(--blue);
+        margin-bottom: 16px;
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+      }
+      .qa-q::before {
+        content: "Q.";
+        font-family: var(--mono);
+        font-size: 14px;
+        color: var(--border2);
+        font-weight: 600;
+        margin-top: 3px;
+      }
+      .qa-a {
+        padding-left: 26px;
+        border-left: 2px solid var(--border2);
+        color: #c0c0d8;
+        font-size: 14.5px;
+        line-height: 1.7;
+        position: relative;
+      }
+      .qa-a::before {
+        content: "A.";
+        position: absolute;
+        left: -32px;
+        top: 0;
+        font-family: var(--mono);
+        font-size: 14px;
+        color: var(--green);
+        font-weight: 600;
+        background: var(--bg);
+        padding-right: 8px;
+      }
     </style>
   </head>
   <body>
@@ -931,11 +974,11 @@
         <a href="#mps">MPS</a>
         <a href="#decision">Decision Guide</a>
         <a href="#commands">Commands</a>
+        <a href="#qa-archive">Q&A Archive</a>
       </div>
     </nav>
 
     <main>
-      <!-- 01 -->
       <section id="stack">
         <div class="snum">01 — Foundation</div>
         <h2>CUDA · cuDNN · TensorRT<br />The Software Stack</h2>
@@ -1012,7 +1055,6 @@
         </div>
       </section>
 
-      <!-- 02 -->
       <section id="gpu-compare">
         <div class="snum">02 — Hardware Comparison</div>
         <h2>Jetson Orin Nano · RTX PRO 2000<br /><em>vs.</em> DGX Spark GB10</h2>
@@ -1223,7 +1265,6 @@
         </div>
       </section>
 
-      <!-- 03 -->
       <section id="tflops">
         <div class="snum">03 — Compute Throughput</div>
         <h2>TFLOPS: What It Means<br />for Your Inference Pipeline</h2>
@@ -1378,7 +1419,6 @@
         </p>
       </section>
 
-      <!-- 04 -->
       <section id="bandwidth">
         <div class="snum">04 — Memory Bandwidth</div>
         <h2>Data Bandwidth: Often the<br />Actual Bottleneck in Inference</h2>
@@ -1513,7 +1553,6 @@
         </div>
       </section>
 
-      <!-- 05 -->
       <section id="inference-eq">
         <div class="snum">05 — The Inference Equation</div>
         <h2>Why Inference Takes The Time<br />It Does: The Full Equation</h2>
@@ -1700,7 +1739,6 @@
         </div>
       </section>
 
-      <!-- 06 -->
       <section id="formats">
         <div class="snum">06 — Model Lifecycle</div>
         <h2>PyTorch · ONNX · TensorRT<br />The Three File Formats</h2>
@@ -1804,7 +1842,6 @@
         </div>
       </section>
 
-      <!-- 07 -->
       <section id="math">
         <div class="snum">07 — Neural Network Math</div>
         <h2>Convolution, BatchNorm &amp; ReLU:<br />What the GPU Is Actually Computing</h2>
@@ -1850,7 +1887,6 @@
         </div>
       </section>
 
-      <!-- 08 -->
       <section id="precision">
         <div class="snum">08 — Numerical Precision</div>
         <h2>FP32 · FP16 · INT8 · FP4<br />Precision and Calibration</h2>
@@ -1939,7 +1975,6 @@
         </p>
       </section>
 
-      <!-- 09 -->
       <section id="async">
         <div class="snum">09 — Execution Model</div>
         <h2>PyTorch vs TensorRT:<br />How They Actually Talk to the GPU</h2>
@@ -1975,7 +2010,6 @@
         </div>
       </section>
 
-      <!-- 10 -->
       <section id="batching">
         <div class="snum">10 — Throughput Scaling</div>
         <h2>Dynamic Batching: The Correct<br />Way to Saturate a GPU</h2>
@@ -2031,7 +2065,6 @@
   --maxShapes=input:<span class="num">8</span>x3x640x640</code></pre>
       </section>
 
-      <!-- 11 -->
       <section id="scaling">
         <div class="snum">11 — Consumer Scaling</div>
         <h2>Why Multiple PyTorch Consumers<br />Made Inference Slower</h2>
@@ -2130,7 +2163,6 @@
   --int8 --useDLACore=<span class="num">0</span> --allowGPUFallback</code></pre>
       </section>
 
-      <!-- 12 -->
       <section id="mps">
         <div class="snum">12 — Multi-Process Service</div>
         <h2>NVIDIA MPS: True Spatial<br />GPU Sharing Across Processes</h2>
@@ -2171,7 +2203,6 @@ sudo nvidia-smi -i <span class="num">0</span> -c DEFAULT</code></pre>
         </div>
       </section>
 
-      <!-- 13 -->
       <section id="decision">
         <div class="snum">13 — Decision Guide</div>
         <h2>Choosing the Right Hardware,<br />Framework &amp; Precision</h2>
@@ -2317,7 +2348,6 @@ sudo nvidia-smi -i <span class="num">0</span> -c DEFAULT</code></pre>
         </div>
       </section>
 
-      <!-- 14 -->
       <section id="commands">
         <div class="snum">14 — Reference</div>
         <h2>Production Command Reference</h2>
@@ -2397,13 +2427,465 @@ sudo dmidecode --type memory | grep -i <span class="str">"Speed\|Data Width\|Typ
           >
         </div>
       </section>
+
+      <section id="qa-archive">
+        <div class="snum">15 — Q&A Archive</div>
+        <h2>Raw Conversation Logs:<br />The Foundational Q&A</h2>
+        <p>
+          The original unedited questions and detailed answers that formed the architectural basis of this document.
+        </p>
+
+        <div class="qa-block">
+          <div class="qa-q">
+            What is the architectural difference between CUDA and TensorRT? Furthermore, how do PyTorch (.pt), ONNX
+            (.onnx), and TensorRT (.engine) model formats differ in terms of loading mechanics and execution overhead?
+            Ultimately, why is TensorRT favored over PyTorch for production GPU inference with models like YOLO?
+          </div>
+          <div class="qa-a">
+            <p>
+              This is a core architectural question for anyone deploying high-performance computer vision pipelines.
+              When you are processing multiple video streams or running heavy models like YOLO on edge devices or
+              servers, understanding this stack is the difference between getting 15 FPS and 60+ FPS.
+            </p>
+            <p>
+              Here is the breakdown of the software stack, the model formats, and why the industry shifts from PyTorch
+              to TensorRT for production inference.
+            </p>
+
+            <h3><span class="dot" style="background: var(--blue)"></span>1. CUDA vs. TensorRT: The Software Stack</h3>
+            <p>Think of CUDA as the foundation and TensorRT as a highly specialized application built on top of it.</p>
+            <ul>
+              <li>
+                <strong>CUDA (Compute Unified Device Architecture):</strong> This is NVIDIA's foundational parallel
+                computing platform and programming model. It provides the low-level API that allows software (like C++
+                or Python) to talk directly to the GPU's hardware cores.
+              </li>
+              <li>
+                <strong>TensorRT:</strong> This is a high-performance deep learning inference SDK built
+                <em>on top of</em> CUDA. It acts as an <strong>optimizing compiler</strong> for neural networks. It
+                takes a trained model, analyzes the math operations, and figures out the absolute fastest way to execute
+                those specific operations using CUDA on your specific GPU hardware.
+              </li>
+            </ul>
+
+            <h3>
+              <span class="dot" style="background: var(--blue)"></span>2. The Model Files: PyTorch vs. ONNX vs. TensorRT
+            </h3>
+            <div class="tw">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Feature</th>
+                    <th>PyTorch (.pt / .pth)</th>
+                    <th>ONNX (.onnx)</th>
+                    <th>TensorRT (.engine / .trt)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><strong>Primary Use</strong></td>
+                    <td>Training, Research, Prototyping</td>
+                    <td>Interoperability, Bridge format</td>
+                    <td>High-Performance Production Inference</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Flexibility</strong></td>
+                    <td>Extremely High (Dynamic graphs)</td>
+                    <td>Medium (Static graph)</td>
+                    <td>Extremely Low (Hardware-locked)</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Hardware Agnostic?</strong></td>
+                    <td>Yes (Runs on CPU, any GPU, etc.)</td>
+                    <td>Yes</td>
+                    <td><strong>No.</strong> Locked to the exact GPU architecture.</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Performance</strong></td>
+                    <td>Baseline</td>
+                    <td>Moderate</td>
+                    <td>Maximum</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <ul>
+              <li>
+                <strong>PyTorch (.pt):</strong> This file contains the model's weights and sometimes its architecture.
+                It requires the heavy PyTorch framework to run. It uses a "dynamic computational graph," meaning the
+                memory and execution paths are figured out on the fly.
+              </li>
+              <li>
+                <strong>ONNX (Open Neural Network Exchange):</strong> This is a universal translation format. Since
+                TensorRT doesn't natively read PyTorch code perfectly, you export your PyTorch model to ONNX. ONNX
+                freezes the dynamic PyTorch code into a "static graph".
+              </li>
+              <li>
+                <strong>TensorRT (.engine):</strong> This is the final, compiled binary. You feed the ONNX file into the
+                TensorRT compiler. TensorRT benchmarks various CUDA kernels against your specific GPU and compiles an
+                engine.
+              </li>
+            </ul>
+
+            <h3><span class="dot" style="background: var(--blue)"></span>3. How They Are Loaded</h3>
+            <ul>
+              <li>
+                <strong>Loading PyTorch:</strong> You import the <code>torch</code> library and use
+                <code>torch.load()</code>. PyTorch automatically handles memory allocation on the GPU, sets up the
+                computational graph, and prepares for both forward (inference) and backward (training) passes. It
+                consumes a lot of VRAM just for framework overhead.
+              </li>
+              <li>
+                <strong>Loading TensorRT:</strong> Loading an <code>.engine</code> file, especially in C++ environments,
+                is much closer to the metal. You deserialize the engine, create an "Execution Context," and you must
+                <strong>manually allocate GPU memory buffers</strong> for the input images and the output bounding box
+                tensors.
+              </li>
+            </ul>
+
+            <h3>
+              <span class="dot" style="background: var(--blue)"></span>4. Why TensorRT is Better for YOLO/Inference
+            </h3>
+            <ul>
+              <li>
+                <strong>Layer and Tensor Fusion:</strong> TensorRT <em>fuses</em> Convolution, Batch Normalization, and
+                ReLU into a single CUDA kernel. It reads once, applies all three math operations in the GPU registers,
+                and writes once.
+              </li>
+              <li>
+                <strong>Kernel Auto-Tuning:</strong> TensorRT tests algorithms during the <code>.engine</code> build
+                phase and selects the one that runs fastest on your specific hardware architecture.
+              </li>
+              <li>
+                <strong>Precision Calibration (FP16 / INT8):</strong> TensorRT easily strips the model down to 16-bit
+                (FP16) or 8-bit integer (INT8) precision. This literally halves or quarters the memory footprint.
+              </li>
+              <li>
+                <strong>No Framework Overhead:</strong> Once compiled, the TensorRT engine doesn't need PyTorch
+                installed. It relies only on the lightweight TensorRT runtime.
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="qa-block">
+          <div class="qa-q">
+            What is the standard pipeline for converting a PyTorch model into an optimized ONNX or TensorRT engine for
+            production deployment?
+          </div>
+          <div class="qa-a">
+            <p>
+              Yes, absolutely. In fact, converting your PyTorch model to TensorRT is the standard industry pipeline for
+              deploying production-grade computer vision models. The most reliable and common path is a two-step
+              process: <strong>PyTorch → ONNX → TensorRT</strong>.
+            </p>
+
+            <h3>
+              <span class="dot" style="background: var(--blue)"></span>Method 1: The Quick Route (For YOLO /
+              Ultralytics)
+            </h3>
+            <pre data-lang="bash"><code># Export straight to ONNX
+yolo export model=yolov8s.pt format=onnx opset=12
+
+# Export directly to a TensorRT engine (half=True enables FP16 precision)
+yolo export model=yolov8s.pt format=engine half=True device=0</code></pre>
+
+            <h3>
+              <span class="dot" style="background: var(--blue)"></span>Method 2: The Standard Route (For Custom PyTorch
+              Models)
+            </h3>
+            <p>Step 1: Export PyTorch to ONNX</p>
+            <pre data-lang="python"><code>import torch
+
+model = torch.load("my_model.pth")
+model.eval().cuda()
+
+dummy_input = torch.randn(1, 3, 640, 640).cuda()
+
+torch.onnx.export(
+    model, dummy_input, "model.onnx", 
+    export_params=True, opset_version=12, do_constant_folding=True,
+    input_names=['input'], output_names=['output'],
+    dynamic_axes={'input': {0: 'batch_size'}, 'output': {0: 'batch_size'}} 
+)</code></pre>
+
+            <p>Step 2: Compile ONNX to TensorRT Engine (<code>trtexec</code>)</p>
+            <pre data-lang="bash"><code>/usr/src/tensorrt/bin/trtexec --onnx=model.onnx \
+                              --saveEngine=model.engine \
+                              --fp16 \
+                              --workspace=4096</code></pre>
+          </div>
+        </div>
+
+        <div class="qa-block">
+          <div class="qa-q">
+            How do core neural network operations (Convolution, BatchNorm, ReLU) actually execute on the hardware? Could
+            you clarify precision calibration (FP32 vs. FP16), the role of cuDNN, and how TensorRT eliminates framework
+            overhead compared to PyTorch? Lastly, how does dynamic batching integrate into a queue-based event detection
+            architecture?
+          </div>
+          <div class="qa-a">
+            <p>
+              These are the exact right questions to ask. Understanding these underlying mechanics is what separates
+              developers who just "run Python scripts" from engineers who build enterprise-grade, high-throughput Video
+              Management Systems.
+            </p>
+
+            <h3>
+              <span class="dot" style="background: var(--blue)"></span>1. The Math: Convolution, BatchNorm, and ReLU
+            </h3>
+            <ul>
+              <li>
+                <strong>Convolution:</strong> This is the feature extractor. A tiny window (like a 3x3 grid) sliding
+                across your image pixels doing matrix multiplication to detect patterns.
+              </li>
+              <li>
+                <strong>Batch Normalization (BatchNorm):</strong> Acts as an equalizer, normalizing the data so the
+                numbers stay within a predictable range.
+              </li>
+              <li>
+                <strong>ReLU (Rectified Linear Unit):</strong> The decision-maker. <code>f(x) = max(0, x)</code>. This
+                introduces "non-linearity."
+              </li>
+            </ul>
+            <p>
+              <strong>Why TensorRT loves this:</strong> TensorRT mathematically collapses the Convolution and BatchNorm
+              into a single equation, and applies the ReLU instantly in the GPU's registers. One read, one write.
+            </p>
+
+            <h3>
+              <span class="dot" style="background: var(--blue)"></span>2. The Memory: FP32 vs. FP16 and Calibration
+            </h3>
+            <ul>
+              <li><strong>FP32 (Single Precision):</strong> 32 bits of memory.</li>
+              <li><strong>FP16 (Half Precision):</strong> 16 bits. Truncates decimals.</li>
+            </ul>
+            <p>
+              By switching to FP16, you halve the size of your model. Data moves twice as fast.
+              <strong>Precision Calibration</strong> is the mathematical process TensorRT uses during compilation to
+              figure out exactly how to scale the numbers so you don't lose the important data when squashing 32 bits
+              down to 16 bits or 8 bits.
+            </p>
+
+            <h3><span class="dot" style="background: var(--blue)"></span>3. The Frameworks</h3>
+            <ul>
+              <li>
+                <strong>PyTorch</strong> is an interpreter. It dynamically maps out memory and asks the GPU to execute
+                operations one by one.
+              </li>
+              <li><strong>ONNX</strong> is the middleman. It is a static, language-agnostic blueprint.</li>
+              <li>
+                <strong>TensorRT</strong> acts as an optimizing compiler. During inference, there is no memory
+                allocation overhead. It just ingests the image directly into pre-allocated memory buffers.
+              </li>
+            </ul>
+
+            <h3><span class="dot" style="background: var(--blue)"></span>4. What is cuDNN?</h3>
+            <p>
+              <strong>cuDNN</strong> is NVIDIA's highly optimized, low-level math library. If CUDA is the C++ compiler
+              for the GPU, cuDNN is the optimized standard library for deep learning.
+            </p>
+
+            <h3>
+              <span class="dot" style="background: var(--blue)"></span>5. Dynamic Batching in Your Queued Architecture
+            </h3>
+            <p>
+              To multiply your camera capacity, you need to implement a "Batching Queue". Wait up to 15 milliseconds or
+              until you have 4 messages, stack the 4 corresponding frames from Redis using numpy into a shape of
+              <code>(4, 3, 640, 640)</code>, and send that single stacked array to the model.
+            </p>
+          </div>
+        </div>
+
+        <div class="qa-block">
+          <div class="qa-q">
+            When scaling the message consumer processes for a video management system, how does TensorRT compare to
+            PyTorch, and what specific bottlenecks does it resolve?
+          </div>
+          <div class="qa-a">
+            <p>
+              Scaling your consumer is where the architectural differences between PyTorch and TensorRT become glaringly
+              obvious. Scaling with TensorRT is exponentially better, cheaper, and more stable.
+            </p>
+
+            <h3>
+              <span class="dot" style="background: var(--blue)"></span>1. The VRAM "Tax" (The CUDA Context Problem)
+            </h3>
+            <p>
+              Every time you start a Python process and <code>import torch</code>, PyTorch creates a "CUDA Context"
+              reserving 1GB to 2GB VRAM just for framework overhead. TensorRT has almost no framework overhead; its
+              context is a few dozen megabytes. You can pack 8-12 TensorRT processes on a single GPU.
+            </p>
+
+            <h3><span class="dot" style="background: var(--blue)"></span>2. CPU Starvation and the Python GIL</h3>
+            <p>
+              PyTorch requires the Python CPU thread to actively manage the GPU execution, competing with Redis calls
+              and OpenCV decoding due to the Python GIL. TensorRT executes asynchronously at the C++/CUDA level,
+              instantly freeing up the CPU.
+            </p>
+
+            <h3><span class="dot" style="background: var(--blue)"></span>3. Queue Drain Rate vs. Queue Bloat</h3>
+            <p>
+              Because TensorRT executes 2x to 5x faster, a single TensorRT consumer can often drain the RabbitMQ queue
+              faster than 3 PyTorch consumers combined, preventing queue bloat.
+            </p>
+          </div>
+        </div>
+
+        <div class="qa-block">
+          <div class="qa-q">
+            I attempted to scale my PyTorch consumers on an RTX PRO 2000 Blackwell and Jetson Orin Nano, but inference
+            latency actually doubled. What hardware mechanics caused this performance degradation, and how does TensorRT
+            avoid this issue?
+          </div>
+          <div class="qa-a">
+            <p>
+              What you experienced is the difference between software concurrency (running multiple Python scripts) and
+              hardware parallelism. You essentially created a traffic jam inside your GPU.
+            </p>
+
+            <h3><span class="dot" style="background: var(--blue)"></span>1. Why PyTorch Doubled Your Inference Time</h3>
+            <ul>
+              <li>
+                <strong>Hardware Time-Slicing:</strong> The GPU driver constantly hits pause on Process A, saves its
+                massive state, loads Process B, runs a bit, and swaps back. This adds massive latency.
+              </li>
+              <li>
+                <strong>Unified Memory Choke (Jetson):</strong> Spinning up a second PyTorch consumer consumed all
+                physical RAM, forcing the OS to use Swap Memory, plummeting inference speed.
+              </li>
+              <li>
+                <strong>PCIe Bus Saturation (Blackwell):</strong> Two PyTorch processes pushing unoptimized FP32 tensors
+                across the PCIe bus simultaneously cause collisions and throttle bandwidth.
+              </li>
+            </ul>
+
+            <h3><span class="dot" style="background: var(--blue)"></span>2. How TensorRT Fixes This</h3>
+            <p>
+              TensorRT bypasses this with a microscopic memory footprint and true asynchronous execution. It sets up
+              persistent memory buffers and completely frees up the PCIe bus and CPU.
+            </p>
+
+            <h3>
+              <span class="dot" style="background: var(--blue)"></span>3. The Real Solution: Stop Scaling Consumers,
+              Start Batching
+            </h3>
+            <p>
+              The correct way to scale is to use a single consumer process with Dynamic Batching. TensorRT is compiled
+              to handle matrix multiplications in massive parallel blocks. Processing 4 frames in a batch gives 4x the
+              throughput for almost no extra latency.
+            </p>
+          </div>
+        </div>
+
+        <div class="qa-block">
+          <div class="qa-q">
+            Is it accurate to say PyTorch relies on heavy CPU-to-GPU micromanagement while TensorRT executes
+            autonomously? Additionally, how do the PCIe bus bandwidth and NVIDIA MPS (Multi-Process Service) dictate
+            overall multi-consumer scaling?
+          </div>
+          <div class="qa-a">
+            <p>
+              Your assumption is conceptually spot on. Both live on the CPU, but the difference is the amount of chatter
+              and who is in control.
+            </p>
+
+            <h3><span class="dot" style="background: var(--blue)"></span>1. The Assumption: PyTorch vs. TensorRT</h3>
+            <ul>
+              <li>
+                <strong>PyTorch (The Micromanager):</strong> The CPU manager calls the GPU factory step-by-step for
+                every single mathematical operation.
+              </li>
+              <li>
+                <strong>TensorRT (The Autonomous Factory):</strong> The CPU sends one command: "Execute Engine." The GPU
+                runs the entire neural network autonomously from the compiled execution plan.
+              </li>
+            </ul>
+
+            <h3><span class="dot" style="background: var(--blue)"></span>2. The PCIe Bus (The Physical Highway)</h3>
+            <p>
+              The PCIe bus is the data highway connecting your CPU/RAM to your GPU's VRAM. PyTorch constantly sends
+              instructions back and forth across it. TensorRT sends the raw image once and reads the bounding boxes back
+              once, halving the data size if using FP16.
+            </p>
+
+            <h3><span class="dot" style="background: var(--blue)"></span>3. NVIDIA MPS (Multi-Process Service)</h3>
+            <p>
+              MPS is a Linux daemon that acts as a traffic controller for your GPU. Instead of processes time-slicing
+              sequentially, MPS achieves <strong>Spatial Sharing</strong>. It merges workloads from all Python scripts
+              and dedicates fractions of the GPU cores to run them all simultaneously at the exact same physical
+              millisecond.
+            </p>
+          </div>
+        </div>
+
+        <div class="qa-block">
+          <div class="qa-q">
+            To clarify lower-level mechanics: 1) How does TensorRT optimize convolutions without skipping the actual
+            math? 2) How does the Python runtime sync async TensorRT executions? 3) How do Tensor Cores differ from
+            standard CUDA/CPU cores? 4) Is unified memory fundamentally better than discrete PCIe memory for inference?
+            5) How do I verify and enable NVIDIA MPS on my host machine?
+          </div>
+          <div class="qa-a">
+            <p>
+              <strong>1. Does TensorRT bypass Convolution?</strong> No, it does not skip the math. It bypasses the
+              <em>Memory Traffic</em> through Layer Fusion. It calculates Convolution, BatchNorm, and ReLU instantly
+              while data is in the ultra-fast internal cache, writing to VRAM only once at the end.
+            </p>
+            <p>
+              <strong>2. If TensorRT is async, how do I get results instantly?</strong> The
+              <code>ultralytics</code> package forces a synchronization point for you. It calls a command like
+              <code>torch.cuda.synchronize()</code> under the hood, freezing your Python thread until the GPU finishes.
+            </p>
+            <p>
+              <strong>3. How do Tensor Cores work?</strong> A Tensor Core is a monster designed for Matrix
+              Multiplication. It can multiply a 4x4 or 8x8 grid of numbers and add them together in a single clock
+              cycle. The count matters immensely when exporting to FP16.
+            </p>
+            <p>
+              <strong>4. Is Unified Memory better?</strong> No. It is a trade-off. Unified memory (Jetson) has
+              "Zero-Copy" but slow system RAM bandwidth (~68 GB/s). PCIe + Dedicated VRAM (Blackwell) has a crossing
+              penalty but insanely fast VRAM bandwidth (~288 GB/s).
+            </p>
+            <p>
+              <strong>5. NVIDIA MPS Availability:</strong> It is fully supported on your RTX Blackwell. Enable it via
+              terminal: <code>sudo nvidia-smi -i 0 -c EXCLUSIVE_PROCESS</code> followed by
+              <code>nvidia-cuda-mps-control -d</code>.
+            </p>
+          </div>
+        </div>
+
+        <div class="qa-block">
+          <div class="qa-q">
+            Why is LPDDR5 considered a bottleneck for AI inference compared to dedicated graphics memory? Furthermore,
+            what is the exact formula to calculate physical memory bandwidth for a given hardware setup?
+          </div>
+          <div class="qa-a">
+            <p>
+              <strong>1. What is LPDDR5?</strong> Low-Power Double Data Rate 5. Its primary goal is power efficiency.
+            </p>
+            <p>
+              <strong>2. Why is LPDDR5 "Slow" for AI?</strong> It has a very narrow bus width (64-bit or 128-bit). It
+              doesn't have enough "lanes" to push massive arrays of numbers instantly.
+            </p>
+            <p>
+              <strong>3. What is Faster?</strong> GDDR6/GDDR6X (Graphics DDR) inside your RTX Blackwell uses wider buses
+              (256-bit or 384-bit). HBM (High Bandwidth Memory) stacks chips vertically with absurdly wide buses
+              (4,096-bit).
+            </p>
+            <p>
+              <strong>4. How to Know Memory Bandwidth:</strong><br />
+              Formula: <code>Bandwidth (GB/s) = (Memory Speed (MT/s) × Bus Width (bits)) / 8000</code><br />
+              Jetson Terminal: <code>sudo tegrastats</code> (Look for EMC_FREQ)<br />
+              RTX Terminal: <code>nvidia-smi -q -d MEMORY</code>
+            </p>
+          </div>
+        </div>
+      </section>
     </main>
 
     <footer>
-      <p>
-        GPU Inference Engineering — VMS / Samiksha Platform &nbsp;·&nbsp; Jetson Orin Nano · RTX PRO 2000 Blackwell ·
-        DGX Spark GB10 &nbsp;·&nbsp; For GitHub Pages
-      </p>
+      <p>GPU Inference Engineering &nbsp;·&nbsp; Jetson Orin Nano · RTX PRO 2000 Blackwell · DGX Spark GB10 &nbsp;</p>
     </footer>
   </body>
 </html>
