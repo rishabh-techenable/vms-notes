@@ -1,0 +1,1736 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>YOLO Custom Training & Deployment — Technical Documentation</title>
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        font-size: 15px;
+        line-height: 1.7;
+        color: #e2e2e2;
+        background: #111113;
+      }
+      .page {
+        max-width: 860px;
+        margin: 0 auto;
+        padding: 48px 40px;
+      }
+
+      /* Header */
+      .doc-header {
+        border-bottom: 2px solid #e2e2e2;
+        padding-bottom: 24px;
+        margin-bottom: 48px;
+      }
+      .doc-header .meta {
+        font-size: 11px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: #666;
+        margin-bottom: 10px;
+      }
+      .doc-header h1 {
+        font-size: 28px;
+        font-weight: 700;
+        letter-spacing: -0.5px;
+        line-height: 1.3;
+        margin-bottom: 12px;
+        color: #f0f0f0;
+      }
+      .doc-header .subtitle {
+        font-size: 14px;
+        color: #999;
+        max-width: 620px;
+      }
+
+      .toc {
+        background: #1a1a1e;
+        border: 1px solid #2a2a30;
+        border-radius: 6px;
+        padding: 24px 28px;
+        margin-bottom: 48px;
+      }
+      .toc h2 {
+        font-size: 11px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: #666;
+        margin-bottom: 16px;
+        font-weight: 600;
+      }
+      .toc ol {
+        padding-left: 18px;
+      }
+      .toc li {
+        margin-bottom: 6px;
+      }
+      .toc a {
+        color: #c0c0cc;
+        text-decoration: none;
+        font-size: 14px;
+        border-bottom: 1px dotted #444;
+      }
+      .toc a:hover {
+        color: #7da8e8;
+        border-bottom-color: #7da8e8;
+      }
+
+      .section {
+        margin-bottom: 56px;
+      }
+      .section-header {
+        display: flex;
+        align-items: baseline;
+        gap: 16px;
+        margin-bottom: 6px;
+      }
+      .section-num {
+        font-size: 11px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: #555;
+        font-weight: 600;
+        white-space: nowrap;
+      }
+      .section h2 {
+        font-size: 20px;
+        font-weight: 700;
+        letter-spacing: -0.3px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid #2a2a30;
+        width: 100%;
+        margin-bottom: 20px;
+        color: #f0f0f0;
+      }
+
+      .q-block {
+        background: #161b2e;
+        border-left: 3px solid #4a6fd4;
+        border-radius: 0 6px 6px 0;
+        padding: 16px 20px;
+        margin-bottom: 20px;
+      }
+      .q-label {
+        font-size: 10px;
+        letter-spacing: 0.15em;
+        text-transform: uppercase;
+        font-weight: 700;
+        color: #7da8e8;
+        margin-bottom: 6px;
+      }
+      .q-block p {
+        font-size: 14px;
+        color: #a0a8c0;
+        font-style: italic;
+        line-height: 1.6;
+      }
+
+      .prose p {
+        margin-bottom: 14px;
+        font-size: 14.5px;
+        color: #c8c8d0;
+      }
+      .prose p:last-child {
+        margin-bottom: 0;
+      }
+      .prose strong {
+        font-weight: 600;
+        color: #e2e2e2;
+      }
+
+      .sub-section {
+        margin-top: 24px;
+        margin-bottom: 20px;
+      }
+      .sub-section h3 {
+        font-size: 14px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #999;
+        margin-bottom: 12px;
+        padding-bottom: 6px;
+        border-bottom: 1px solid #222228;
+      }
+
+      .step-list {
+        list-style: none;
+        padding: 0;
+      }
+      .step-list li {
+        display: flex;
+        gap: 14px;
+        margin-bottom: 14px;
+        align-items: flex-start;
+      }
+      .step-num {
+        background: #e2e2e2;
+        color: #111;
+        font-size: 11px;
+        font-weight: 700;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        margin-top: 2px;
+      }
+      .step-list li p {
+        font-size: 14px;
+        color: #c0c0cc;
+        margin: 0;
+        line-height: 1.6;
+      }
+
+      .bullet-list {
+        list-style: none;
+        padding: 0;
+      }
+      .bullet-list li {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 10px;
+        align-items: flex-start;
+        font-size: 14px;
+        color: #c0c0cc;
+      }
+      .bullet-list li::before {
+        content: "";
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background: #555;
+        flex-shrink: 0;
+        margin-top: 7px;
+      }
+
+      .code-wrap {
+        background: #0d0d10;
+        border: 1px solid #222228;
+        border-radius: 6px;
+        margin: 16px 0;
+        overflow: hidden;
+      }
+      .code-label {
+        background: #161618;
+        padding: 6px 14px;
+        font-size: 11px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: #666;
+        font-family: "SF Mono", "Fira Code", monospace;
+        border-bottom: 1px solid #222228;
+      }
+      pre {
+        padding: 16px 18px;
+        overflow-x: auto;
+      }
+      code {
+        font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+        font-size: 13px;
+        color: #c8d0e0;
+        line-height: 1.6;
+      }
+      .inline-code {
+        background: #1e1e24;
+        border: 1px solid #333;
+        border-radius: 3px;
+        padding: 1px 5px;
+        font-family: "SF Mono", "Fira Code", monospace;
+        font-size: 13px;
+        color: #f08080;
+      }
+
+      .callout {
+        border-radius: 6px;
+        padding: 14px 18px;
+        margin: 16px 0;
+        font-size: 14px;
+        line-height: 1.6;
+      }
+      .callout-warning {
+        background: #1e1800;
+        border: 1px solid #6b5000;
+        color: #d4b060;
+      }
+      .callout-info {
+        background: #0d1a2e;
+        border: 1px solid #1e3a5a;
+        color: #88b0d8;
+      }
+      .callout-critical {
+        background: #200a0a;
+        border: 1px solid #5a1a1a;
+        color: #d48080;
+      }
+      .callout strong {
+        font-weight: 700;
+      }
+      .callout-warning strong {
+        color: #e8c870;
+      }
+      .callout-info strong {
+        color: #90c0f0;
+      }
+      .callout-critical strong {
+        color: #f09090;
+      }
+
+      .def-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 14px;
+        margin: 12px 0;
+      }
+      .def-table td {
+        padding: 8px 10px;
+        border-bottom: 1px solid #222228;
+        vertical-align: top;
+      }
+      .def-table td:first-child {
+        font-weight: 600;
+        color: #e0e0e0;
+        width: 38%;
+      }
+      .def-table td:last-child {
+        color: #a0a0b0;
+      }
+
+      .card-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 12px;
+        margin: 16px 0;
+      }
+      .card {
+        background: #161618;
+        border: 1px solid #2a2a30;
+        border-radius: 6px;
+        padding: 14px 16px;
+      }
+      .card .card-title {
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #666;
+        margin-bottom: 8px;
+      }
+      .card p {
+        font-size: 13px;
+        color: #909098;
+        line-height: 1.5;
+      }
+
+      .strategy-card {
+        border: 1px solid #2a2a30;
+        border-radius: 8px;
+        padding: 20px 24px;
+        margin-bottom: 16px;
+        background: #141416;
+      }
+      .strategy-card .strat-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        margin-bottom: 10px;
+      }
+      .strategy-card h4 {
+        font-size: 15px;
+        font-weight: 700;
+        color: #e0e0e0;
+      }
+      .strat-tag {
+        font-size: 11px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        padding: 3px 8px;
+        border-radius: 3px;
+        font-weight: 600;
+      }
+      .tag-green {
+        background: #0d2218;
+        color: #60c080;
+        border: 1px solid #1a4a2a;
+      }
+      .tag-amber {
+        background: #1e1600;
+        color: #d4a040;
+        border: 1px solid #4a3800;
+      }
+      .tag-blue {
+        background: #0d1828;
+        color: #6090c8;
+        border: 1px solid #1a3050;
+      }
+      .strategy-card .pros-cons {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        margin-top: 12px;
+      }
+      .pros-cons-box {
+        background: #1a1a1e;
+        border-radius: 4px;
+        padding: 10px 12px;
+        border: 1px solid #222228;
+      }
+      .pros-cons-box .label {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-weight: 700;
+        margin-bottom: 6px;
+      }
+      .label-pos {
+        color: #60c080;
+      }
+      .label-neg {
+        color: #d07070;
+      }
+      .pros-cons-box p {
+        font-size: 13px;
+        color: #909098;
+        line-height: 1.5;
+      }
+
+      .v-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13.5px;
+        margin: 12px 0;
+      }
+      .v-table th {
+        text-align: left;
+        padding: 8px 12px;
+        background: #1a1a1e;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #666;
+        font-weight: 700;
+        border-bottom: 2px solid #2a2a30;
+      }
+      .v-table td {
+        padding: 9px 12px;
+        border-bottom: 1px solid #1e1e24;
+        vertical-align: top;
+        color: #a0a0b0;
+      }
+      .v-table tr:last-child td {
+        border-bottom: none;
+      }
+      .v-table td:first-child {
+        font-family: "SF Mono", "Fira Code", monospace;
+        font-size: 12px;
+        color: #f08080;
+      }
+
+      hr {
+        border: none;
+        border-top: 1px solid #1e1e24;
+        margin: 40px 0;
+      }
+
+      @media print {
+        .page {
+          padding: 24px;
+        }
+        .toc {
+          page-break-after: always;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <!-- Document Header -->
+      <div class="doc-header">
+        <div class="meta">Technical Reference &nbsp;·&nbsp; Computer Vision &nbsp;·&nbsp; Inference Engineering</div>
+        <h1>YOLOv8x Custom Class Training,<br />MLOps, and On-Premise Deployment</h1>
+        <p class="subtitle">
+          A structured technical reference covering custom dataset creation, transfer learning, continuous model
+          versioning, and edge inference delivery for the Trinetra VMS pipeline.
+        </p>
+      </div>
+
+      <!-- Table of Contents -->
+      <div class="toc">
+        <h2>Contents</h2>
+        <ol>
+          <li><a href="#s1">Custom Class Training: Principles and Process</a></li>
+          <li><a href="#s2">Class ID Architecture and Feature Collision</a></li>
+          <li><a href="#s3">Retraining, Convergence Time, and Continuous Learning</a></li>
+          <li><a href="#s4">Understanding Weights and TensorRT Optimization</a></li>
+          <li><a href="#s5">Dynamic Resolution Engine Compilation</a></li>
+          <li><a href="#s6">Dataset Construction and Annotation Workflow</a></li>
+          <li><a href="#s7">Frame Extraction Strategies from Live Video</a></li>
+          <li><a href="#s8">Advanced Annotation Methodology</a></li>
+          <li><a href="#s9">Hard Negative Mining: Theory and Practice</a></li>
+          <li><a href="#s10">Model Version Control and MLOps</a></li>
+          <li><a href="#s11">On-Premise Model Delivery and OTA Updates</a></li>
+        </ol>
+      </div>
+
+      <!-- Section 1 -->
+      <div class="section" id="s1">
+        <div class="section-header">
+          <span class="section-num">Section 01</span>
+        </div>
+        <h2>Custom Class Training: Principles and Process</h2>
+
+        <div class="q-block">
+          <div class="q-label">Question</div>
+          <p>
+            YOLO has a pre-trained class for "truck." Only the car and truck classes are required. A new custom class
+            needs to be added using a proprietary dataset. Describe the end-to-end training process — what changes, what
+            improves, and how it works internally.
+          </p>
+        </div>
+
+        <div class="prose">
+          <p>
+            Before beginning any training procedure, a critical machine learning principle must be addressed:
+            <strong>Catastrophic Forgetting</strong>. If a pre-trained YOLO model is fine-tuned exclusively on images of
+            a new custom class, it will entirely overwrite its knowledge of car and truck detection. To retain all
+            target classes simultaneously, the model must be trained on a unified dataset containing annotations for all
+            classes together.
+          </p>
+        </div>
+
+        <div class="sub-section">
+          <h3>Training Process</h3>
+          <ol class="step-list">
+            <li>
+              <span class="step-num">1</span>
+              <p>
+                <strong>Build the combined dataset.</strong> Source car and truck images from COCO or OpenImages.
+                Combine with custom class images. Normalize all annotations to YOLO format:
+                <span class="inline-code">class_id x_center y_center width height</span>. Re-index class IDs
+                sequentially: <span class="inline-code">0: car, 1: truck, 2: custom_class</span>.
+              </p>
+            </li>
+            <li>
+              <span class="step-num">2</span>
+              <p>
+                <strong>Author the <span class="inline-code">data.yaml</span> file.</strong> This file declares the
+                training and validation image paths, the number of classes (<span class="inline-code">nc: 3</span>), and
+                the class name mapping.
+              </p>
+            </li>
+            <li>
+              <span class="step-num">3</span>
+              <p>
+                <strong>Initialize transfer learning.</strong> Load the pre-trained YOLOv8x weights (<span
+                  class="inline-code"
+                  >yolov8x.pt</span
+                >) as the starting checkpoint. Direct the training command to the new
+                <span class="inline-code">data.yaml</span>.
+              </p>
+            </li>
+            <li>
+              <span class="step-num">4</span>
+              <p>
+                <strong>Execute training.</strong> The model iterates over the combined dataset for a defined number of
+                epochs, converging its weights toward the three-class detection problem.
+              </p>
+            </li>
+          </ol>
+        </div>
+
+        <div class="code-wrap">
+          <div class="code-label">data.yaml</div>
+          <pre><code>train: /path/to/dataset/train/images
+val:   /path/to/dataset/val/images
+
+nc: 3
+names: ['car', 'truck', 'custom_class']</code></pre>
+        </div>
+
+        <div class="sub-section">
+          <h3>What Changes During Training</h3>
+          <table class="def-table">
+            <tr>
+              <td>Output head (architecture)</td>
+              <td>The 80-class output layer is discarded and replaced with a randomly initialized 3-class head.</td>
+            </tr>
+            <tr>
+              <td>Final layer weights</td>
+              <td>Undergo large adjustments as the model learns to distinguish the new custom class.</td>
+            </tr>
+            <tr>
+              <td>Early layer weights</td>
+              <td>Undergo minor refinement. Edge and texture detectors are largely preserved from pre-training.</td>
+            </tr>
+            <tr>
+              <td>Loss calculation</td>
+              <td>The model no longer penalizes missed predictions for classes outside the defined three.</td>
+            </tr>
+          </table>
+        </div>
+
+        <div class="sub-section">
+          <h3>What Improves</h3>
+          <ul class="bullet-list">
+            <li>
+              <strong>Domain accuracy:</strong> Fewer classes means greater specialization. The model's capacity is
+              concentrated entirely on the target objects.
+            </li>
+            <li>
+              <strong>False positive reduction:</strong> Removing irrelevant classes eliminates erroneous cross-class
+              predictions.
+            </li>
+            <li>
+              <strong>Custom class recall:</strong> Leveraging the pre-trained backbone's general visual understanding
+              significantly reduces the labeled data volume required for the new class.
+            </li>
+          </ul>
+        </div>
+
+        <div class="sub-section">
+          <h3>Transfer Learning Mechanics</h3>
+          <div class="prose">
+            <p>
+              A YOLO model consists of two principal components. The <strong>Backbone</strong> functions as the model's
+              perceptual system — trained on millions of images to detect edges, textures, colors, and abstract shapes.
+              This component is preserved. The <strong>Head</strong> maps abstract feature representations to specific
+              class labels.
+            </p>
+            <p>
+              During fine-tuning, the backbone's accumulated "visual knowledge" is retained while the head is rewired to
+              output only the three target class predictions.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <hr />
+
+      <!-- Section 2 -->
+      <div class="section" id="s2">
+        <div class="section-header">
+          <span class="section-num">Section 02</span>
+        </div>
+        <h2>Class ID Architecture and Feature Collision</h2>
+
+        <div class="q-block">
+          <div class="q-label">Question</div>
+          <p>
+            Currently running YOLOv8x exported to TensorRT, using classes 2 (car) and 7 (truck) from the COCO index. The
+            intent is to add a new class to identify custom tractors under a different name, avoiding ID collision with
+            YOLO's native truck class. Is this approach architecturally sound?
+          </p>
+        </div>
+
+        <div class="callout callout-critical">
+          <strong>Critical:</strong> This approach will produce both a structural and a visual collision. The
+          architecture cannot maintain non-sequential class IDs, and the neural network cannot resolve visual similarity
+          through integer separation alone.
+        </div>
+
+        <div class="sub-section">
+          <h3>Structural Reality: Sequential IDs Are Mandatory</h3>
+          <div class="prose">
+            <p>
+              The YOLOv8x output head is architected to emit probability distributions across exactly 80 contiguous
+              classes (IDs 0–79). There is no mechanism to selectively output IDs 2, 7, and a new ID such as 80. The
+              architecture strictly requires a zero-indexed sequential mapping.
+            </p>
+            <p>The output head must be rebuilt from scratch. The class remapping for a 3-class model is as follows:</p>
+          </div>
+          <table class="def-table">
+            <tr>
+              <td>New ID 0</td>
+              <td>Formerly COCO ID 2 — Car</td>
+            </tr>
+            <tr>
+              <td>New ID 1</td>
+              <td>Formerly COCO ID 7 — Truck</td>
+            </tr>
+            <tr>
+              <td>New ID 2</td>
+              <td>Custom class — Tractor/Proprietary vehicle</td>
+            </tr>
+          </table>
+        </div>
+
+        <div class="sub-section">
+          <h3>Visual Reality: Feature Collision in the Network</h3>
+          <div class="prose">
+            <p>
+              The model does not process integer class IDs — it processes pixel gradients, geometric shapes, and learned
+              feature maps. If the custom tractor shares visual characteristics with the standard COCO truck (large
+              tires, elevated cab, exhaust infrastructure), the loss function will generate high penalties during
+              training as the model's pre-trained weights conflict with the new label assignments.
+            </p>
+          </div>
+          <div class="callout callout-info">
+            <strong>Mitigation:</strong> Include labeled images of standard trucks alongside custom tractor images in
+            the training dataset. Perform deliberate hard negative mining on visually ambiguous border-case vehicles to
+            force the network to learn discriminating features between the two classes.
+          </div>
+        </div>
+
+        <div class="sub-section">
+          <h3>End-to-End Pipeline to TensorRT</h3>
+          <ol class="step-list">
+            <li>
+              <span class="step-num">1</span>
+              <p>
+                <strong>Dataset preparation.</strong> Combine COCO car/truck images with custom tractor images.
+                Normalize all annotation IDs to the new 0, 1, 2 scheme.
+              </p>
+            </li>
+            <li>
+              <span class="step-num">2</span>
+              <p>
+                <strong>PyTorch training.</strong> Load <span class="inline-code">yolov8x.pt</span>, point to the new
+                3-class <span class="inline-code">data.yaml</span>, and train. The 80-class head is discarded; a new
+                3-class head is initialized and trained.
+              </p>
+            </li>
+            <li>
+              <span class="step-num">3</span>
+              <p><strong>ONNX export.</strong> Export the best checkpoint weights to an ONNX intermediate graph.</p>
+            </li>
+            <li>
+              <span class="step-num">4</span>
+              <p>
+                <strong>TensorRT compilation.</strong> Compile the ONNX graph into a new
+                <span class="inline-code">.engine</span> file via <span class="inline-code">trtexec</span>. Update the
+                inference pipeline to consume the new output tensor shape with 3 classes.
+              </p>
+            </li>
+          </ol>
+        </div>
+      </div>
+
+      <hr />
+
+      <!-- Section 3 -->
+      <div class="section" id="s3">
+        <div class="section-header">
+          <span class="section-num">Section 03</span>
+        </div>
+        <h2>Retraining, Convergence Time, and Continuous Learning</h2>
+
+        <div class="q-block">
+          <div class="q-label">Questions</div>
+          <p>
+            1. When retraining a deployed model, is the process identical to initial training, or can the new dataset
+            alone be used as input? &nbsp;2. Will training time be equivalent to or shorter than the initial run?
+            &nbsp;3. What dataset volume is appropriate when appending data to existing classes? &nbsp;4. When the
+            deployed model misses detections in production, should retraining wait for a large image batch, or is
+            progressive updating viable?
+          </p>
+        </div>
+
+        <div class="sub-section">
+          <h3>1. Process: Fine-Tuning vs. Initial Training</h3>
+          <div class="prose">
+            <p>
+              The starting checkpoint changes from the generic <span class="inline-code">yolov8x.pt</span> to the
+              previously trained custom <span class="inline-code">best.pt</span>. Training on the new dataset in
+              isolation is not viable — this will cause Catastrophic Forgetting, overwriting the model's knowledge of
+              cars and trucks.
+            </p>
+            <p>
+              The correct strategy is a <strong>Replay Buffer</strong>: mix the newly collected images with a random
+              10–20% sample of the original baseline dataset. Train the current
+              <span class="inline-code">best.pt</span> on this mixed batch.
+            </p>
+          </div>
+        </div>
+
+        <div class="sub-section">
+          <h3>2. Convergence Time</h3>
+          <div class="prose">
+            <p>
+              Retraining is significantly faster. The initial run required the classification head to reorganize from
+              scratch, typically demanding 100+ epochs. Subsequent fine-tuning merely nudges existing weights to
+              accommodate edge cases, generally converging within 10–30 epochs.
+            </p>
+          </div>
+        </div>
+
+        <div class="sub-section">
+          <h3>3. Dataset Volume for Class Updates</h3>
+          <div class="callout callout-info">
+            <strong>Guidance:</strong> Small and highly curated is preferable to large and redundant. A batch of 50–200
+            high-diversity, difficult images will yield greater accuracy improvement than 5,000 easy, repetitive images.
+            Prioritize varied lighting, angles, occlusions, and confuser vehicles.
+          </div>
+          <div class="prose">
+            <p>
+              Maintain a balanced class ratio across the mixed training set to prevent the model from becoming biased
+              toward the most recently added class.
+            </p>
+          </div>
+        </div>
+
+        <div class="sub-section">
+          <h3>4. Progressive Updating via Active Learning</h3>
+          <div class="prose">
+            <p>
+              The modern production standard is <strong>Active Learning</strong> — a continuous cycle of extracting
+              failure frames, annotating them, and triggering micro-updates. This is superior to waiting for a large
+              batch.
+            </p>
+          </div>
+          <ol class="step-list">
+            <li>
+              <span class="step-num">1</span>
+              <p>
+                <strong>Identify the miss.</strong> When the inference pipeline fails to detect or misclassifies an
+                object, extract the specific frame from the rolling video retention.
+              </p>
+            </li>
+            <li>
+              <span class="step-num">2</span>
+              <p><strong>Annotate the frame.</strong> Label the object correctly in the extracted frame.</p>
+            </li>
+            <li>
+              <span class="step-num">3</span>
+              <p><strong>Stage the frame.</strong> Drop it into a designated staging directory.</p>
+            </li>
+            <li>
+              <span class="step-num">4</span>
+              <p>
+                <strong>Trigger micro-updates.</strong> Once the staging batch reaches 50–100 images, run a short
+                fine-tuning pass on the current weights, export to ONNX, rebuild the TensorRT engine, and swap it into
+                the inference pipeline.
+              </p>
+            </li>
+          </ol>
+        </div>
+      </div>
+
+      <hr />
+
+      <!-- Section 4 -->
+      <div class="section" id="s4">
+        <div class="section-header">
+          <span class="section-num">Section 04</span>
+        </div>
+        <h2>Understanding Weights and TensorRT Optimization</h2>
+
+        <div class="q-block">
+          <div class="q-label">Question</div>
+          <p>
+            How do neural network weights function mechanically, and what changes during each training cycle?
+            Additionally, what training and export decisions will improve the quality and performance of the final
+            TensorRT engine file?
+          </p>
+        </div>
+
+        <div class="sub-section">
+          <h3>How Weights Function</h3>
+          <div class="prose">
+            <p>
+              A weight is a numerical multiplier that encodes the relative importance of a specific visual input signal.
+              The function of these multipliers varies by network depth:
+            </p>
+          </div>
+          <table class="def-table">
+            <tr>
+              <td>Early layers</td>
+              <td>Act as basic visual filters — detecting edges, gradients, and contrast transitions.</td>
+            </tr>
+            <tr>
+              <td>Middle layers</td>
+              <td>
+                Combine low-level features into higher-order patterns: textures, curves, geometric shapes (e.g., the
+                circular profile of a tractor tire).
+              </td>
+            </tr>
+            <tr>
+              <td>Final layers (Head)</td>
+              <td>
+                Map abstract feature combinations to class probabilities (e.g., "large tire + elevated cab + exhaust
+                stack = 92% Class 2: Tractor").
+              </td>
+            </tr>
+          </table>
+        </div>
+
+        <div class="sub-section">
+          <h3>The Training Update Cycle</h3>
+          <div class="prose">
+            <p>Every training batch executes three steps in sequence:</p>
+          </div>
+          <ol class="step-list">
+            <li>
+              <span class="step-num">1</span>
+              <p>
+                <strong>Forward pass.</strong> An image traverses the network. Current weights multiply pixel values and
+                features to produce a class prediction.
+              </p>
+            </li>
+            <li>
+              <span class="step-num">2</span>
+              <p>
+                <strong>Loss calculation.</strong> The prediction is compared against the ground-truth annotation. The
+                mathematical difference — the "loss" — is computed.
+              </p>
+            </li>
+            <li>
+              <span class="step-num">3</span>
+              <p>
+                <strong>Backpropagation.</strong> Using calculus, the system traces which specific weights contributed
+                to the incorrect prediction and incrementally adjusts those values to reduce future error.
+              </p>
+            </li>
+          </ol>
+        </div>
+
+        <div class="sub-section">
+          <h3>Optimizing the Training Process for TensorRT</h3>
+          <ul class="bullet-list">
+            <li>
+              <strong>Lock the input resolution:</strong> Train at the exact inference resolution (e.g.,
+              <span class="inline-code">imgsz=640</span>). Export with fixed input dimensions rather than dynamic shapes
+              wherever possible for maximum kernel optimization.
+            </li>
+            <li>
+              <strong>Avoid custom operations:</strong> Stick to native YOLOv8 architecture. Non-standard operations may
+              not be fusable by TensorRT's kernel compiler, creating inference bottlenecks.
+            </li>
+            <li>
+              <strong>Prepare an INT8 calibration dataset:</strong> If INT8 quantization is planned, reserve a
+              representative set of 500–1,000 training images to feed the TensorRT calibration process during engine
+              build.
+            </li>
+          </ul>
+        </div>
+
+        <div class="sub-section">
+          <h3>Clean ONNX Export</h3>
+          <div class="prose">
+            <p>
+              TensorRT cannot parse <span class="inline-code">.pt</span> files directly. The ONNX intermediate format is
+              required. The <span class="inline-code">simplify=True</span> flag is mandatory — it runs a graph optimizer
+              to eliminate redundant operations and constant-fold mathematical expressions before TensorRT compilation.
+            </p>
+          </div>
+          <div class="code-wrap">
+            <div class="code-label">Export command</div>
+            <pre><code>yolo export model=runs/detect/train/weights/best.pt \
+  format=onnx opset=12 simplify=True</code></pre>
+          </div>
+        </div>
+      </div>
+
+      <hr />
+
+      <!-- Section 5 -->
+      <div class="section" id="s5">
+        <div class="section-header">
+          <span class="section-num">Section 05</span>
+        </div>
+        <h2>Dynamic Resolution Engine Compilation</h2>
+
+        <div class="q-block">
+          <div class="q-label">Question</div>
+          <p>
+            Multiple RTSP feeds from different camera models require dynamic input resolution support. How should the
+            ONNX export and TensorRT compilation be configured for a dynamic engine?
+          </p>
+        </div>
+
+        <div class="sub-section">
+          <h3>Step 1 — Dynamic ONNX Export</h3>
+          <div class="prose">
+            <p>
+              The <span class="inline-code">dynamic=True</span> flag instructs PyTorch to leave batch size and spatial
+              dimensions as variable axes in the exported ONNX graph.
+            </p>
+          </div>
+          <div class="code-wrap">
+            <div class="code-label">ONNX export (dynamic)</div>
+            <pre><code>yolo export model=best.pt format=onnx dynamic=True simplify=True</code></pre>
+          </div>
+        </div>
+
+        <div class="sub-section">
+          <h3>Step 2 — TensorRT Optimization Profile</h3>
+          <div class="prose">
+            <p>
+              A dynamic ONNX model requires an explicit <strong>Optimization Profile</strong> during TensorRT
+              compilation. Three shape boundaries must be defined (format:
+              <span class="inline-code">batch × channels × height × width</span>):
+            </p>
+          </div>
+          <table class="def-table">
+            <tr>
+              <td><span class="inline-code">--minShapes</span></td>
+              <td>The minimum input dimensions the engine will ever receive.</td>
+            </tr>
+            <tr>
+              <td><span class="inline-code">--optShapes</span></td>
+              <td>
+                The most common production dimensions. TensorRT optimizes its execution kernels most aggressively for
+                this size.
+              </td>
+            </tr>
+            <tr>
+              <td><span class="inline-code">--maxShapes</span></td>
+              <td>The maximum dimensions. <strong>GPU memory is allocated based on this value.</strong></td>
+            </tr>
+          </table>
+          <div class="code-wrap">
+            <div class="code-label">trtexec — dynamic engine compilation</div>
+            <pre><code>trtexec --onnx=best.onnx \
+  --saveEngine=best_dynamic.engine \
+  --minShapes=images:1x3x320x320 \
+  --optShapes=images:1x3x640x640 \
+  --maxShapes=images:4x3x1080x1920 \
+  --fp16</code></pre>
+          </div>
+        </div>
+
+        <div class="callout callout-warning">
+          <strong>VRAM caution for Jetson Orin Nano:</strong> GPU memory is pre-allocated at the
+          <span class="inline-code">--maxShapes</span> boundary. Inflating this value unnecessarily will consume shared
+          memory and risk OOM crashes in the GStreamer pipeline. Set <span class="inline-code">--maxShapes</span> as
+          tightly as actual RTSP stream resolutions permit.
+        </div>
+      </div>
+
+      <hr />
+
+      <!-- Section 6 -->
+      <div class="section" id="s6">
+        <div class="section-header">
+          <span class="section-num">Section 06</span>
+        </div>
+        <h2>Dataset Construction and Annotation Workflow</h2>
+
+        <div class="q-block">
+          <div class="q-label">Question</div>
+          <p>
+            Describe the complete process for creating datasets for new custom classes and updating annotations for
+            existing classes.
+          </p>
+        </div>
+
+        <div class="sub-section">
+          <h3>Phase 1 — Data Sourcing (Hard Mining from Production NVR)</h3>
+          <ol class="step-list">
+            <li>
+              <span class="step-num">1</span>
+              <p>
+                <strong>Isolate failures.</strong> Note timestamps where the current pipeline misses a vehicle or
+                produces a misclassification.
+              </p>
+            </li>
+            <li>
+              <span class="step-num">2</span>
+              <p>
+                <strong>Extract sparse frames using FFmpeg.</strong> Pull 5–10 second clips around failure timestamps.
+                Extract at 1–2 fps to ensure visual diversity between frames. Extracting at 30 fps yields 300
+                near-identical images per clip, which causes overfitting.
+              </p>
+            </li>
+            <li>
+              <span class="step-num">3</span>
+              <p>
+                <strong>Gather confuser frames.</strong> Specifically extract standard trucks that resemble the custom
+                tractor, and occluded or poorly lit cars. These become training hard negatives.
+              </p>
+            </li>
+          </ol>
+        </div>
+
+        <div class="sub-section">
+          <h3>Phase 2 — Annotation</h3>
+          <div class="prose">
+            <p><strong>Recommended tooling:</strong></p>
+          </div>
+          <div class="card-row">
+            <div class="card">
+              <div class="card-title">CVAT</div>
+              <p>
+                Open-source, self-hosted via Docker. Industry standard. Native YOLO export. Recommended for production
+                data pipelines.
+              </p>
+            </div>
+            <div class="card">
+              <div class="card-title">Label Studio</div>
+              <p>Open-source, self-hosted. Strong API integration support for automated pipelines.</p>
+            </div>
+            <div class="card">
+              <div class="card-title">Roboflow</div>
+              <p>Cloud-based, polished UI. Excellent dataset versioning. Has tiered pricing.</p>
+            </div>
+          </div>
+          <div class="prose" style="margin-top: 12px">
+            <p>
+              <strong>Labeling discipline:</strong> Bounding boxes must be drawn as tightly as possible around visible
+              vehicle pixels only. Define clear, written criteria distinguishing each class before annotation begins.
+              Annotate only what is visible; never infer occluded geometry.
+            </p>
+          </div>
+        </div>
+
+        <div class="sub-section">
+          <h3>Phase 3 — Replay Buffer Construction</h3>
+          <ol class="step-list">
+            <li>
+              <span class="step-num">1</span>
+              <p>Draw a random 15–20% sample from the original baseline dataset (cars and trucks).</p>
+            </li>
+            <li>
+              <span class="step-num">2</span>
+              <p>Include 100% of the newly annotated NVR frames.</p>
+            </li>
+            <li>
+              <span class="step-num">3</span>
+              <p>Merge into a single combined dataset for training.</p>
+            </li>
+          </ol>
+        </div>
+
+        <div class="sub-section">
+          <h3>Phase 4 — Directory Structure</h3>
+          <div class="code-wrap">
+            <div class="code-label">Required directory layout</div>
+            <pre><code>custom_dataset/
+├── data.yaml
+├── images/
+│   ├── train/     ← 80% of all images
+│   └── val/       ← 20% of all images
+└── labels/
+    ├── train/     ← Corresponding .txt annotation files
+    └── val/       ← Corresponding .txt annotation files</code></pre>
+          </div>
+          <div class="callout callout-info">
+            <strong>Validation set rule:</strong> The <span class="inline-code">val/</span> directory is never exposed
+            to the model during training. It must contain a representative mix of all three classes, including edge
+            cases, to produce honest performance metrics.
+          </div>
+        </div>
+      </div>
+
+      <hr />
+
+      <!-- Section 7 -->
+      <div class="section" id="s7">
+        <div class="section-header">
+          <span class="section-num">Section 07</span>
+        </div>
+        <h2>Frame Extraction Strategies from Live Video</h2>
+
+        <div class="q-block">
+          <div class="q-label">Question</div>
+          <p>
+            Available source material consists of 30fps H.264/H.265 MP4 event clips where the target vehicle is moving
+            throughout the recording. The current YOLOv8x model detects the vehicle inconsistently — identifying it in
+            some frames and missing it in similar adjacent frames. How should frame extraction for annotation be
+            approached?
+          </p>
+        </div>
+
+        <div class="sub-section">
+          <h3>Method 1 — FFmpeg Frame Decimation</h3>
+          <div class="prose">
+            <p>
+              Suitable for rapid batch extraction. Downsample the video to 1–2 fps to ensure sufficient vehicle movement
+              between extracted frames, guaranteeing visual diversity.
+            </p>
+          </div>
+          <div class="code-wrap">
+            <div class="code-label">FFmpeg — 1 frame per second extraction</div>
+            <pre><code>ffmpeg -i input_event.mp4 \
+  -vf "fps=1" \
+  -q:v 2 \
+  extracted_frames/frame_%04d.jpg</code></pre>
+          </div>
+          <div class="prose">
+            <p>
+              The <span class="inline-code">-q:v 2</span> flag maintains high JPEG quality. High compression artifacts
+              in training data degrade model accuracy.
+            </p>
+          </div>
+        </div>
+
+        <div class="sub-section">
+          <h3>Method 2 — Active Confidence-Based Extraction (Recommended)</h3>
+          <div class="prose">
+            <p>
+              Leverages the deployed model to automatically isolate the exact frames where detection fails. This
+              eliminates manual frame hunting and produces maximally difficult training examples.
+            </p>
+            <p>
+              <strong>Extraction logic:</strong> Save a frame if there are zero detections in the expected region, or if
+              the maximum detection confidence falls within a defined "gray zone" (e.g., 0.25–0.50). Apply a cooldown
+              counter (e.g., skip 15 frames after each save) to prevent saving redundant near-identical frames during
+              sustained failures.
+            </p>
+          </div>
+          <div class="code-wrap">
+            <div class="code-label">Python — active confidence extraction</div>
+            <pre><code>import cv2
+from ultralytics import YOLO
+
+model = YOLO("yolov8x.pt")
+cap = cv2.VideoCapture("input_event.mp4")
+
+frame_count = 0
+cooldown = 0
+
+while cap.isOpened():
+    ret, frame = cap.read()
+    if not ret:
+        break
+
+    if cooldown > 0:
+        cooldown -= 1
+        frame_count += 1
+        continue
+
+    results = model(frame, classes=[2, 7], verbose=False)
+
+    if len(results[0].boxes) == 0:
+        cv2.imwrite(f"hard_negatives/missed_{frame_count}.jpg", frame)
+        cooldown = 15
+    else:
+        conf = float(results[0].boxes.conf[0])
+        if conf < 0.50:
+            cv2.imwrite(f"hard_negatives/low_conf_{frame_count}.jpg", frame)
+            cooldown = 15
+
+    frame_count += 1
+
+cap.release()</code></pre>
+          </div>
+        </div>
+
+        <div class="sub-section">
+          <h3>Annotation Guidelines for Extracted Failure Frames</h3>
+          <table class="def-table">
+            <tr>
+              <td>Motion blur</td>
+              <td>
+                If a human can reasonably identify the vehicle despite blur, draw the bounding box. The model must learn
+                blurred feature representations.
+              </td>
+            </tr>
+            <tr>
+              <td>Partial occlusion</td>
+              <td>
+                Draw the bounding box strictly around the visible portion. Never extend the box to infer hidden
+                geometry.
+              </td>
+            </tr>
+            <tr>
+              <td>Extremely small objects</td>
+              <td>
+                Skip frames where the vehicle is fewer than ~10 pixels on any axis. Such labels introduce noise into the
+                loss function.
+              </td>
+            </tr>
+          </table>
+        </div>
+      </div>
+
+      <hr />
+
+      <!-- Section 8 -->
+      <div class="section" id="s8">
+        <div class="section-header">
+          <span class="section-num">Section 08</span>
+        </div>
+        <h2>Advanced Annotation Methodology</h2>
+
+        <div class="q-block">
+          <div class="q-label">Question</div>
+          <p>
+            What advanced annotation practices should be followed for a production VMS system that relies on bounding
+            box quality for both classification accuracy and downstream tracker (DeepSORT / ByteTrack) ID consistency?
+          </p>
+        </div>
+
+        <div class="sub-section">
+          <h3>Precision for Tracking and ROI Logic</h3>
+          <ul class="bullet-list">
+            <li>
+              <strong>Pixel-perfect edges:</strong> Bounding boxes must touch the absolute outermost visible pixels.
+              Loose boxes cause false IoU calculations and premature tracker ID drops.
+            </li>
+            <li>
+              <strong>Exclude protrusions:</strong> Do not include antennas, thin side mirrors, or exhaust pipes. These
+              inflate box dimensions and create overlap artifacts in dense traffic.
+            </li>
+            <li>
+              <strong>Temporal stability:</strong> For a vehicle approaching the camera, annotated boxes should grow
+              consistently frame over frame. Jittery boxes will corrupt velocity estimation in tracker logic.
+            </li>
+          </ul>
+        </div>
+
+        <div class="sub-section">
+          <h3>Edge Cases in Long-Duration NVR Recordings</h3>
+          <table class="def-table">
+            <tr>
+              <td>Nighttime headlight glare</td>
+              <td>Box only the physical headlight hardware and visible chassis. Do not include road illumination.</td>
+            </tr>
+            <tr>
+              <td>Frame-edge truncation</td>
+              <td>Draw the box around the visible portion with the edge of the box flush with the image boundary.</td>
+            </tr>
+            <tr>
+              <td>Articulated vehicles (tractor-trailer)</td>
+              <td>
+                Establish and document a strict rule: either label the cab only (recommended for ROI line-crossing
+                accuracy) or the full unit. Do not mix approaches within the dataset.
+              </td>
+            </tr>
+            <tr>
+              <td>Wet road reflections</td>
+              <td>Box the physical vehicle only, never the road reflection.</td>
+            </tr>
+            <tr>
+              <td>Cast shadows</td>
+              <td>Never include road shadows within the bounding box boundary.</td>
+            </tr>
+          </table>
+        </div>
+
+        <div class="sub-section">
+          <h3>Class Definition Consistency</h3>
+          <div class="prose">
+            <p>
+              Create a <strong>Visual Heuristic Guide</strong>: a reference sheet containing 5 canonical screenshots per
+              class with written criteria defining the distinguishing visual characteristics (e.g., "Tractor: exposed
+              rear wheels, open frame chassis; Truck: enclosed box bed, fully paneled body"). Any ambiguous vehicle that
+              requires more than 3 seconds of consideration should be discarded from the dataset rather than labeled
+              with uncertainty.
+            </p>
+          </div>
+        </div>
+
+        <div class="sub-section">
+          <h3>Efficient CVAT Annotation Workflow</h3>
+          <ol class="step-list">
+            <li>
+              <span class="step-num">1</span>
+              <p>
+                <strong>Bind hotkeys:</strong> Map class IDs to numeric keys (1 = Car, 2 = Truck, 3 = Tractor). Map N to
+                create a new bounding box, F to advance frame.
+              </p>
+            </li>
+            <li>
+              <span class="step-num">2</span>
+              <p>
+                <strong>First pass:</strong> Rapidly draw approximate boxes around all target vehicles, assign class
+                labels, advance frame.
+              </p>
+            </li>
+            <li>
+              <span class="step-num">3</span>
+              <p>
+                <strong>Refinement pass:</strong> Review the batch and tighten all boxes to pixel-precise boundaries.
+                Two-pass annotation is significantly faster than aiming for perfection on first draw.
+              </p>
+            </li>
+            <li>
+              <span class="step-num">4</span>
+              <p>
+                <strong>Post-export verification:</strong> Open a sample of exported
+                <span class="inline-code">.txt</span> files and confirm the first integer on each line matches the
+                expected class ID mapping before ingesting into training.
+              </p>
+            </li>
+          </ol>
+        </div>
+      </div>
+
+      <hr />
+
+      <!-- Section 9 -->
+      <div class="section" id="s9">
+        <div class="section-header">
+          <span class="section-num">Section 09</span>
+        </div>
+        <h2>Hard Negative Mining: Theory and Practice</h2>
+
+        <div class="q-block">
+          <div class="q-label">Question</div>
+          <p>
+            What is a "hard negative" in the context of object detection, and how does it differ from a standard
+            negative example?
+          </p>
+        </div>
+
+        <div class="sub-section">
+          <h3>Definition</h3>
+          <div class="prose">
+            <p>
+              A <strong>hard negative</strong> is an image region that does not contain the target object but is
+              visually similar enough to the target that the model incorrectly predicts a high-confidence match. It is
+              "negative" because it is not the target class; it is "hard" because it systematically deceives the model's
+              current decision boundary.
+            </p>
+          </div>
+        </div>
+
+        <div class="sub-section">
+          <h3>Easy vs. Hard Negatives</h3>
+          <div class="card-row">
+            <div class="card">
+              <div class="card-title">Easy negative</div>
+              <p>
+                A motorcycle or a clear roadway when scanning for tractors. The model resolves this correctly with
+                near-zero loss contribution. Weights do not update meaningfully.
+              </p>
+            </div>
+            <div class="card">
+              <div class="card-title">Hard negative</div>
+              <p>
+                A heavy dump truck or backhoe sharing large-tire and elevated-cab geometry with the target tractor. The
+                model may confidently misclassify this, generating large loss and forcing significant weight updates.
+              </p>
+            </div>
+            <div class="card">
+              <div class="card-title">Effect on training</div>
+              <p>
+                Hard negatives drive targeted, high-magnitude weight updates, forcing the model to learn fine-grained
+                discriminating features rather than broad shape heuristics.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="sub-section">
+          <h3>Hard Negative Mining in Production</h3>
+          <div class="prose">
+            <p>
+              Hard negative mining is the practice of systematically identifying these deceptive examples from the
+              production environment and incorporating them into the training dataset. Rather than adding thousands of
+              generic tractor images (which reinforce knowledge the model already has), 100 images of the specific
+              standard trucks that the model falsely flags as tractors will force the network to learn the precise
+              visual boundary between the two classes, directly reducing the false positive rate after retraining.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <hr />
+
+      <!-- Section 10 -->
+      <div class="section" id="s10">
+        <div class="section-header">
+          <span class="section-num">Section 10</span>
+        </div>
+        <h2>Model Version Control and MLOps</h2>
+
+        <div class="q-block">
+          <div class="q-label">Question</div>
+          <p>
+            As the model will be continuously retrained in production, how should model versions, datasets, experiment
+            results, and edge deployment configurations be systematically managed to prevent regression and data loss?
+          </p>
+        </div>
+
+        <div class="sub-section">
+          <h3>Semantic Versioning Nomenclature</h3>
+          <div class="prose">
+            <p>
+              Every artifact must be named with a schema that fully describes its contents without opening the file.
+            </p>
+          </div>
+          <table class="v-table">
+            <tr>
+              <th>Version tier</th>
+              <th>Trigger condition</th>
+              <th>Example</th>
+            </tr>
+            <tr>
+              <td>Major (v2.0.0)</td>
+              <td>
+                Architecture changes or class schema changes (e.g., adding a new class, upgrading to a new YOLO version)
+              </td>
+              <td>YOLOv8 → YOLOv11</td>
+            </tr>
+            <tr>
+              <td>Minor (v2.1.0)</td>
+              <td>Significant dataset additions or replay buffer retraining rounds</td>
+              <td>+500 hard negative frames</td>
+            </tr>
+            <tr>
+              <td>Patch (v2.1.1)</td>
+              <td>Hyperparameter adjustments on identical dataset</td>
+              <td>Learning rate tuning</td>
+            </tr>
+          </table>
+          <div class="prose" style="margin-top: 12px">
+            <p>
+              <strong>File naming standard:</strong> Every artifact includes version, architecture, resolution,
+              precision, and target hardware.<br />
+              Example: <span class="inline-code">trinetra_v2.1.0_yolov8x_img640_fp16_orin.engine</span>
+            </p>
+          </div>
+        </div>
+
+        <div class="sub-section">
+          <h3>Data Version Control (DVC)</h3>
+          <div class="prose">
+            <p>
+              Git is not suitable for dataset management — binary image files will corrupt repository performance.
+              <strong>DVC (Data Version Control)</strong> functions identically to Git but stores actual image data in a
+              remote object store (AWS S3, local NAS) and commits only a lightweight pointer file to the Git repository.
+              This permanently locks a code version to its corresponding dataset state, enabling complete experiment
+              reproducibility.
+            </p>
+          </div>
+        </div>
+
+        <div class="sub-section">
+          <h3>Experiment Tracking</h3>
+          <div class="prose">
+            <p>
+              <strong>Weights & Biases (W&B)</strong> integrates natively with YOLOv8 and automatically logs per-epoch
+              loss, mAP curves, and validation sample images to a cloud dashboard. This creates a permanent, queryable
+              ledger of every training run, enabling direct comparison of accuracy metrics across model versions.
+            </p>
+          </div>
+          <div class="code-wrap">
+            <div class="code-label">W&B setup</div>
+            <pre><code>pip install wandb
+wandb login</code></pre>
+          </div>
+        </div>
+
+        <div class="sub-section">
+          <h3>Edge Deployment Configuration Registry</h3>
+          <div class="prose">
+            <p>
+              Model paths must not be hardcoded in inference scripts. A
+              <span class="inline-code">config.yaml</span> file, read by the pipeline on startup, acts as the central
+              source of truth for the active model version. Rollback to any previous version requires only a YAML edit
+              and a service restart.
+            </p>
+          </div>
+          <div class="code-wrap">
+            <div class="code-label">config.yaml — deployment manifest</div>
+            <pre><code>system:
+  camera_feed: "rtsp://..."
+  target_fps: 30
+
+model:
+  version: "v2.1.0"
+  architecture: "yolov8x"
+  precision: "fp16"
+  engine_path: "/models/trinetra_v2.1.0_yolov8x_img640_fp16_orin.engine"
+  classes:
+    0: "car"
+    1: "truck"
+    2: "tractor"</code></pre>
+          </div>
+        </div>
+      </div>
+
+      <hr />
+
+      <!-- Section 11 -->
+      <div class="section" id="s11">
+        <div class="section-header">
+          <span class="section-num">Section 11</span>
+        </div>
+        <h2>On-Premise Model Delivery and OTA Updates</h2>
+
+        <div class="q-block">
+          <div class="q-label">Question</div>
+          <p>
+            What are the recommended strategies for shipping updated models to on-premise Jetson devices? Compiling a
+            TensorRT engine on the production Jetson while inference is running is not viable due to memory pressure.
+            Consider an OTA-style approach where devices periodically check a cloud registry and build the engine during
+            a maintenance window, or receive a pre-compiled engine file.
+          </p>
+        </div>
+
+        <div class="callout callout-critical">
+          <strong>Critical constraint:</strong> <span class="inline-code">trtexec</span> is resource-intensive and will
+          spike CPU utilization, exhaust shared memory, and cause OOM crashes in active inference pipelines. Engine
+          compilation must not occur on production hardware during live inference. Additionally,
+          <span class="inline-code">.pt</span> PyTorch files must never be shipped to edge devices — the PyTorch runtime
+          is excessively large for edge containers. Ship <span class="inline-code">.onnx</span> or pre-compiled
+          <span class="inline-code">.engine</span> files only.
+        </div>
+
+        <div class="sub-section">
+          <h3>Strategy Comparison</h3>
+
+          <div class="strategy-card">
+            <div class="strat-header">
+              <h4>Strategy 1 — Scheduled Nightly Build on Production Hardware</h4>
+              <span class="strat-tag tag-amber">Viable with caveats</span>
+            </div>
+            <div class="prose">
+              <p>
+                A cron job polls a cloud or local manifest for new model versions. On detection, the ONNX file is
+                downloaded to a staging directory. At a defined maintenance window (e.g., 03:00), the inference service
+                is halted, <span class="inline-code">trtexec</span> builds the engine from the staged ONNX, the active
+                model symlink is updated, and the service is restarted.
+              </p>
+            </div>
+            <div class="pros-cons">
+              <div class="pros-cons-box">
+                <div class="label label-pos">Advantages</div>
+                <p>Self-contained. No additional hardware required.</p>
+              </div>
+              <div class="pros-cons-box">
+                <div class="label label-neg">Disadvantages</div>
+                <p>Requires 5–15 minutes of planned VMS downtime during compilation.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="strategy-card">
+            <div class="strat-header">
+              <h4>Strategy 2 — Shadow CI Build Runner (Recommended)</h4>
+              <span class="strat-tag tag-green">Zero production risk</span>
+            </div>
+            <div class="prose">
+              <p>
+                A dedicated "Shadow" Jetson Orin Nano (identical hardware to the production units) is maintained offline
+                from the inference pipeline. When a new ONNX file is published to the registry, the Shadow Jetson
+                downloads it, compiles the engine via <span class="inline-code">trtexec</span>, and uploads the finished
+                <span class="inline-code">.engine</span> file back to the registry. Production Jetsons poll the
+                manifest, download the pre-compiled engine, and perform a 5-second service restart to load the new
+                weights — zero compilation time on production hardware.
+              </p>
+              <p>
+                Note: TensorRT engine files are platform-specific. An engine compiled on an x86 RTX machine cannot run
+                on an ARM Jetson. The Shadow Jetson must be identical hardware to the deployment targets.
+              </p>
+            </div>
+            <div class="pros-cons">
+              <div class="pros-cons-box">
+                <div class="label label-pos">Advantages</div>
+                <p>
+                  Production inference downtime reduced to a 5-second restart. Zero compilation risk on live hardware.
+                </p>
+              </div>
+              <div class="pros-cons-box">
+                <div class="label label-neg">Disadvantages</div>
+                <p>Requires one additional Jetson unit dedicated to CI builds.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="strategy-card">
+            <div class="strat-header">
+              <h4>Strategy 3 — Local MinIO Registry (Air-Gapped Environments)</h4>
+              <span class="strat-tag tag-blue">Air-gap compatible</span>
+            </div>
+            <div class="prose">
+              <p>
+                For sites with no reliable internet connectivity, a MinIO container (S3-compatible object store) runs on
+                the primary local server. Edge devices poll this local registry. This approach is combined with either
+                Strategy 1 or 2 for the compilation step.
+              </p>
+            </div>
+            <div class="pros-cons">
+              <div class="pros-cons-box">
+                <div class="label label-pos">Advantages</div>
+                <p>No internet dependency. Full data sovereignty. Low latency on local network.</p>
+              </div>
+              <div class="pros-cons-box">
+                <div class="label label-neg">Disadvantages</div>
+                <p>Requires maintaining a local server with persistent storage.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="sub-section">
+          <h3>OTA Poller Implementation</h3>
+          <div class="code-wrap">
+            <div class="code-label">ota_poller.py — runs via cron</div>
+            <pre><code>import os, requests, subprocess, json
+
+MANIFEST_URL = "http://your-local-minio-or-s3/models/manifest.json"
+LOCAL_MANIFEST = "/opt/trinetra/models/current_manifest.json"
+STAGING_DIR = "/opt/trinetra/models/staging/"
+
+def check_for_updates():
+    try:
+        remote = requests.get(MANIFEST_URL).json()
+        with open(LOCAL_MANIFEST, 'r') as f:
+            local = json.load(f)
+        if remote["version"] != local["version"]:
+            download_model(remote)
+    except Exception as e:
+        print(f"Update check failed: {e}")
+
+def download_model(manifest):
+    path = os.path.join(STAGING_DIR, "new_model.engine")
+    r = requests.get(manifest["engine_url"], stream=True)
+    with open(path, 'wb') as f:
+        for chunk in r.iter_content(chunk_size=8192):
+            f.write(chunk)
+    subprocess.run(["/bin/bash", "/opt/trinetra/scripts/deploy_model.sh",
+                    manifest["version"]])
+
+if __name__ == "__main__":
+    check_for_updates()</code></pre>
+          </div>
+
+          <div class="code-wrap">
+            <div class="code-label">deploy_model.sh — atomic deployment</div>
+            <pre><code>#!/bin/bash
+NEW_VERSION=$1
+STAGING="/opt/trinetra/models/staging/new_model.engine"
+PROD_DIR="/opt/trinetra/models/production"
+SYMLINK="/opt/trinetra/models/active.engine"
+
+# Guard: abort if staged file is empty
+if [ ! -s "$STAGING" ]; then
+    echo "Deployment aborted: staged model file is missing or empty."
+    exit 1
+fi
+
+# Move to versioned production path
+mv "$STAGING" "$PROD_DIR/trinetra_${NEW_VERSION}.engine"
+
+# Atomic symlink swap
+ln -sf "$PROD_DIR/trinetra_${NEW_VERSION}.engine" "$SYMLINK"
+
+# Restart inference service
+systemctl restart trinetra-inference.service
+
+# Update local version state
+echo "{\"version\": \"$NEW_VERSION\"}" > /opt/trinetra/models/current_manifest.json
+echo "Deployment complete: $NEW_VERSION"</code></pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div
+        style="
+          border-top: 1px solid #e0e0dc;
+          margin-top: 48px;
+          padding-top: 20px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        "
+      >
+        <span style="font-size: 12px; color: #aaa">Trinetra VMS — Computer Vision Technical Reference</span>
+        <span style="font-size: 12px; color: #aaa">YOLOv8x · TensorRT · Jetson Orin</span>
+      </div>
+    </div>
+  </body>
+</html>
